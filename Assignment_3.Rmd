@@ -20,7 +20,9 @@ knitr::opts_chunk$set(echo = TRUE, comment = NA, message = FALSE, eval = TRUE,
 
 # Promotional event planning
 1. Evidence for strong seasonal demand
-There is a strong seasonal demand for this product. Per event summary, the product has a much higher demand around the time of event 2. The base case for event 2 is 1,360, a 87% increase from event 1, a 469% increase from event 3, a 203% increase from event 4, and a 308% increase from event 5. Similarly, the base demand around event 1 is also higher than other events except event 2. The higher base demands around the time of event 2 and event 1 show a strong seasonal demand.
+By looking at the base case number during each promotional period, we can assume that there’s an uptick in demand towards the end of the year (holiday season). In November (event 1) and December (event 2),  the base cases are much larger than earlier months (event 3-5). 
+
+Per event summary, the product has the highest demand around the time of event 2. The base case for event 2 is 1,360, a 87% increase from event 1, a 469% increase from event 3, a 203% increase from event 4, and a 308% increase from event 5. Similarly, the base demand around event 1 is also higher than other events except event 2. The higher base demands around the time of event 2 and event 1 show a strong seasonal demand.
 
 2. Incremental sales response
 ```{r}
