@@ -217,14 +217,14 @@ Calculate the lift factors for each promotion for both accounts, based on the re
 
 ```{r, fig.width = 6, fig.height = 3, fig.align = "center"}
 lift_factor <- function(model, TPR = 0, DIS = 0, FEA = 0) {
-  alpha  = if(summary(model)$coef[1,4] < 0.1) {summary(model)$coef[1,1]} else {0}
+  alpha  = if(summary(model)$coef[1,4] < 0.05) {summary(model)$coef[1,1]} else {0}
   
-  beta_lp  = if(summary(model)$coef[2,4] < 0.1) {summary(model)$coef[2,1]} else {0}
+  beta_lp  = if(summary(model)$coef[2,4] < 0.05) {summary(model)$coef[2,1]} else {0}
 #  print(beta_lp)
   
   beta_d  = 
 if(length(summary(model)$coef[,1]) >= 3 ){
-  if(summary(model)$coef[3,4] < 0.1) 
+  if(summary(model)$coef[3,4] < 0.05) 
   {summary(model)$coef[3,1]} else {
       0}
 } else {
@@ -234,7 +234,7 @@ if(length(summary(model)$coef[,1]) >= 3 ){
   
   beta_f  = 
 if(length(summary(model)$coef[,1]) >= 4 ){
-  if(summary(model)$coef[4,4] < 0.1) 
+  if(summary(model)$coef[4,4] < 0.05) 
   {summary(model)$coef[4,1]} else {
       0}
 } else {
@@ -288,10 +288,10 @@ Consider both: \newline
 ```{r, fig.width = 6, fig.height = 3, fig.align = "center"}
 ROI_Summary <- function(model, TPR = 0, DIS = 0, FEA = 0, fixed_payment_cost = 0, regular_price = 1.2, regular_margin = 0.55, Stockpiling = 0) {
 
-baseline_units = exp(predict(D_d_f_lm, data.frame(price = regular_price, display = 0, feature = 0),
+baseline_units = exp(predict(model, data.frame(price = regular_price, display = 0, feature = 0),
    type = "response"))
 
-total_units = lift_factor(D_d_f_lm, TPR, DIS, FEA) * baseline_units
+total_units = lift_factor(model, TPR, DIS, FEA) * baseline_units
 
 incremental_units = (total_units - baseline_units)
 
@@ -378,7 +378,3 @@ J_20_df = cbind(data.frame(t(df1)), data.frame(t(df2)), data.frame(t(df3)))
 colnames(J_20_df) = c("Jewel(a)", "Jewel(b)", "Jewel(c)")
 print(J_20_df)
 ```
-
-(a) Lift Factor for Donimick's: 1.349254; Lift Factor for Jewel's: 1.361185;
-(b) Lift Factor for Donimick's: 2.419158; Lift Factor for Jewel's: 2.87767;
-(c) Lift Factor for Donimick's: 3.217896; Lift Factor for Jewel's: 2.877672;
