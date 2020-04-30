@@ -378,3 +378,6 @@ J_20_df = cbind(data.frame(t(df1)), data.frame(t(df2)), data.frame(t(df3)))
 colnames(J_20_df) = c("Jewel(a)", "Jewel(b)", "Jewel(c)")
 print(J_20_df)
 ```
+For Dominick's, if no stockpiling, promotion (a) does not result in positive ROI, while (b) and (c) result in considerable positive ROI which indicates that display and feature together with price reduction will be effective marketing strategy. If stockpiling occurs, promotion (a) and (b) do not show positive ROI and (c) only shows small positive effect. 
+For Jewel, if no stockpiling, promotion (a) is not profitable while promotion (b) and (c) show considerable positive ROI. If stockpiling occurs, only promotion (c) returns positive ROI. 
+These results show that when running promotions, the marketing manager need to be aware of the potential forward purchase and limit the degree of stockpiling; otherwise the promotion might not be successful.
