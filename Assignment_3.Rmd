@@ -67,7 +67,7 @@ summary(cars)
 
 You can also embed plots, for example:
 
-```{r pressure, echo=FALSE}
+```{r pressure, echo=FALSE, fig.align="center"}
 plot(pressure)
 ```
 
@@ -125,6 +125,8 @@ my_summary <- function(df, account) {
 
 D_summary = my_summary(hellmans_df, "Dominicks")
 J_summary = my_summary(hellmans_df, "Jewel")
+D_summary = data.frame(D_summary)
+J_summary = data.frame(J_summary)
 print(D_summary)
 print(J_summary)
 
@@ -148,7 +150,7 @@ Feature and Display correlate positively, which means when featuring happens, it
 
 
 
-\newpage
+\bigskip
 
 ## Question 2
 Estimate the log-linear demand model separately for each account, using price as the only explanatory variable. Then add the feature and display variables.
@@ -206,7 +208,7 @@ summary(J_d_f_lm)
 ```
 Adding Feature and Display into the regression model reduced the coefficient for Price (from -4.1665 to -1.8432 for Dominick’s and from –4.58359 to -1.89735 for Jewel). This is in line with our expectation because in part 1 we noticed Price and Display and Feature are negatively correlated, so the two variables’ effect was all attributed to Price when we only used Price as the independent variable. In other words, if we only use Price as a dependent variable, then all sales change will be attributed to the change in price. But when we include both Display and Feature, the impact of display and feature is then valuated separately, i.e. when feature or display happens price is usually discounted at the same time, so the coefficient of price decreases.
 
-\newpage
+\bigskip
 
 ## Question 3
 Consider the following three promotions: \newline
@@ -270,7 +272,7 @@ print(lift_factor(J_d_f_lm, 0.15, 0.7, 1))
 (c) Lift Factor for Donimick's: 3.217896; Lift Factor for Jewel's: 2.877672;
 
 
-\newpage
+\bigskip
 
 ## Question 4
 Perform an ROI analysis of the three promotions, (a), (b), and (c), separately for the two retail accounts, Dominick’s and Jewel-Osco. The promotions last for one week. Your analysis should follow the approach that we took in class, not the version of this approach taken by Booz Allen Hamilton in the first part of the assignment. \newline
