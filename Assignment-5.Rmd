@@ -12,7 +12,7 @@ graphics: yes
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, comment = NA, message = FALSE, eval = FALSE, 
-                      fig.width = 4.5, fig.height = 3, fig.align = "right")
+                      fig.width = 4.5, fig.height = 3, fig.align = "center")
 ```
 
 \setlength{\parskip}{6pt}
@@ -49,6 +49,33 @@ The variables in the data file are:
 
 Show a histogram of detailing to document how frequently doctors are exposed to detailing for Cialis in a 30 day period. Then examine if there are any systematic differences in the amount of detailing to different types of physicians (remember how to summarize data separately for different groups).
 
+```{r}
+
+library(tidyverse)
+
+load("Detailing.Rdata")
+
+physcian_freq = detailing_df %>% 
+   mutate(row = 1) %>% 
+   group_by(physician_id, type) %>% 
+   summarise(visits = sum(row),
+             choice = sum(choice),
+             frequency = choice/visits
+   )
+
+
+physcian_freq$frequency[!is.finite(physcian_freq$frequency)] = 0
+physcian_freq$frequency[is.nan(physcian_freq$frequency)] = 0
+
+#sum(is.na(physcian_freq))
+
+physcian_freq %>% 
+ggplot(data = ., aes(x = frequency)) + geom_histogram(fill = "light blue", color = "white") + theme_bw() 
+
+physcian_freq %>% 
+ggplot(data = ., aes(x = frequency)) + geom_histogram(fill = "light blue", color = "white") + facet_grid(. ~ type)+ theme_bw()
+
+```
 \newpage
 
 
@@ -60,6 +87,13 @@ Show a histogram of detailing to document how frequently doctors are exposed to 
 
 Estimate a linear probability model to predict the prescription choice of Cialis using the amount of current detailing. The dependent variable is $y = \mathtt{choice}$. For now do not use lags. Interpret the detailing coefficient estimate.
 
+```{r}
+short_lm = detailing_df %>% 
+   glm(choice ~ det, data = ., family = "binomial")
+
+summary(short_lm)
+
+```
 
 ## Long-run effect of detailing
 
@@ -78,6 +112,16 @@ $$ \begin{aligned}
 Using the estimated regression coefficients, $\beta_1$ and $\beta_2$, infer the carry-over factor $\delta$.
 
 Interpret the estimate of $\gamma$ and the estimated carry-over.
+
+```{r}
+long_lm = detailing_df %>% 
+   glm(choice ~  det + lag_det, data = ., family = "binomial")
+
+summary(long_lm)
+gamma = coef(long_lm)["lag_det"] / coef(long_lm)["det"]
+
+print(gamma)
+```
 
 \newpage
 
@@ -99,10 +143,19 @@ The AIC is used for model selection. Among all candidate models, based on differ
 Note that the AIC can be directly calculated from a linear probability or logistic regression (more generally: GLM) model output:
 
 ```{r}
-fit = lm(...)
+
+delta = 0.01
+
+fit = detailing_df %>% 
+      mutate(x = det + delta * lag_det) %>% 
+    lm(choice ~ x, data = .)
 AIC(fit)
 
-fit_logistic = glm(...)
+c("linear", delta, AIC(fit))
+
+fit_logistic = detailing_df %>% 
+      mutate(x = det + delta * lag_det) %>% 
+      glm(choice ~ x, data = ., family = "binomial")
 AIC(fit_logistic)
 ```
 
@@ -111,9 +164,29 @@ AIC(fit_logistic)
 The repetitive grid search process above can be easily automated using a loop. In R, the syntax for a basic loop is as follows:
 
 ```{r}
-for (k in a:b) {
-   ...
+
+seq(0, 1, 0.01)
+linear = test_result = data.frame(0,0, 0)
+names(test_result) = c("type", "delta", "AIC")
+
+for (delta in seq(0.01, 1, 0.01)) {
+    fit = detailing_df %>% 
+    mutate(x = det + delta * lag_det) %>% 
+    lm(choice ~ x, data = .)
+    test_result = rbind(test_result, c("linear", delta, AIC(fit)))
+    
+      fit_logistic = detailing_df %>% 
+      mutate(x = det + delta * lag_det) %>% 
+      glm(choice ~ x, data = ., family = "binomial")
+      test_result = rbind(test_result, c("logistic", delta, AIC(fit_logistic)))
 }
+
+test_result = test_result[-1, ]
+
+test_result[which.min(test_result$AIC),]
+   
+test_result[test_result$AIC == min(test_result[test_result$type == "linear",]$AIC),]
+test_result[test_result$AIC == min(test_result[test_result$type == "logistic",]$AIC),]
 ```
 
 Here, `a` and `b` are two numbers, and `b` will be larger than `a`. Suppose that `a = 2` and `b = 5`. Then R will loop over the values `k = 2, 3, 4, 5` and execute the code inside the brackets `{...}` for each separate value of `k`.
@@ -172,6 +245,17 @@ For conceptual clarity when performing the ROI calculations below, estimate a lo
 (ii) Estimate a  logistic regression with `detstock` as the independent variable.
 
 Save the logistic regression output, which we need below to predict prescription probabilities.
+
+```{r}
+
+detailing_df = detailing_df %>%
+      mutate(detstock = det + 0.8*lag_det)
+
+fit_logistic = detailing_df %>% 
+      glm(choice ~ detstock, data = ., family = "binomial")
+
+summary(fit_logistic)
+```
 
 \newpage
 
