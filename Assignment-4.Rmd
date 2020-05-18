@@ -1,0 +1,422 @@
+---
+title: "Assignment 4: Chobani Product Diffusion and Adoption"
+author: "Günter J. Hitsch"
+date: "April 27, 2020"
+output:
+  pdf_document:
+    number_sections: yes
+    toc: yes
+urlcolor: blue
+graphics: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, comment = NA, message = FALSE, eval = FALSE,
+                      fig.width = 6, fig.height = 3.5, fig.align = "right")
+```
+
+\setlength{\parskip}{6pt}
+\newpage
+
+
+
+
+# Overview
+
+We work with household panel data to study household-level buying and adoption of Chobani, a Greek-style yogurt brand that was launched in the U.S. in 2007.
+
+First, we document the evolution of aggregate sales (spending), purchase quantities, and the market share of Chobani within the refrigerated yogurt category.
+
+Second, we describe household-level buying behavior based on the penetration and buying rates for Chobani. 
+
+Third, we document the adoption of Chobani based on the trial rate and compare it to the repeat buying rate among households.
+
+We use the Nielsen Homescan panel data set for the analysis. The Homescan panel is an ideal data source to study category and brand buying behavior. This data set is available for research from the Kilts Center for Marketing at the Booth School of Business. Nielsen kindly permits me to use the data in 37103.
+
+\bigskip
+
+Note that you need to conduct the analysis on the RStudio Server,
+
+<https://rstudio-class.chicagobooth.edu>
+
+Use your CNET ID to log in. If you cannot log in or if you encouter other technical problems, please email <rsupport@chicagobooth.edu>.
+
+
+
+
+# Packages
+
+Apart from the tidyverse, install and load the packages `bit64`, `lubridate`, and `padr`. The use of these packages will be explained below.
+
+```{r}
+library(tidyverse)
+library(bit64)
+library(lubridate)
+library(padr)
+```
+
+\newpage
+
+
+
+
+# Data
+
+The data file is called `Yogurt-Data.RData` and located on the Chicago Booth RStudio class server:
+
+```{r}
+load("/classes/3710301_spr2020/Data/Yogurt-Data.RData")
+```
+
+Note: This works only if you are enrolled in section 01. If you are enrolled in a different section, please change the section number after `37103` in the file path above, to `81` or `85`.
+
+If you have group members in different sections, it is convenient to copy the data into your group's project folder:
+
+```{r}
+file.copy(from = "/classes/3710301_spr2020/Data/Yogurt-Data.RData", to = "Yogurt_Data.RData")
+```
+
+Again, adjust the file path if needed. The data will be copied to your current folder. Change the location if needed. Finally, you need to copy the data only once! Once the data is in your team's folder, there is no need to run the copy commmand again.
+
+\bigskip
+
+
+`Yogurt-Data.RData` contains three tables:
+
+(i) `purchases`
+(ii) `products`
+(iii) `households`
+
+
+## `purchases`
+
+`purchases` contains household-level transaction data from 2006 to 2014. The data include purchases for products in the yogurt category. The data represent a 40 percent random sample of all Homescan households. I selected this sub-sample to decrease the data size and the overall computation time. Nonetheless, the data set is large, and contains the yogurt-buying behavior of tens of thousands of households.
+
+Check the data size:
+
+```{r}
+length(unique(purchases$household_id))  # Number of households
+nrow(purchases)                         # Total number of observations
+```
+
+Now inspect the data (use `head` or the viewer in RStudio).
+
+- Households are identified based on a unique `household_id`.
+
+- For each shopping trip we know the exact `purchase_date`.
+
+- Products are identified by a `upc` number and the variable `upc_ver_uc` (more details on the `upc_ver_uc` version number are provided below). Note that if the `upc` number appears as a strange number such as 3.481702e-314 you did not load the `bit64` package! The bit64 package is used because the product UPC numbers are 64-bit (long) integers, a data type that is not part of base R.
+
+- The `retailer_code` indicates the chain where a transaction was made (for confidentiality, the Kilts Center data do not include the exact name of the retailer).
+
+- Sometimes multiple transactions for the exact same product are recorded on the same date and at the same retail store. The `transaction_part` provides a number, 1, 2, ..., for each of these transactions. This variable is of little importance for our analysis.
+
+- For each product we have information on the `total_price_paid` (in dollars) and the `quantity` purchased.
+
+- A positive `coupon_value` indicates a coupon dollar amount applied to a transaction.
+
+- The deal flag (0/1) indicates the presence of a promotion.
+
+\bigskip
+
+
+Some important data notes:
+
+(a) Products in the Nielsen Homescan and RMS scanner data are identified by a unique combination of `upc` and `upc_ver_uc`. Why not just the UPC code? --- Because UPC's can change over time, for example if a UPC is assigned to a different product. The UPC version code captures such a change. From now on, whenever we refer to a *product*, we mean a `upc`/`upc_ver_uc` combination.
+
+(b) The `total_price_paid` applies to *all* units purchased. Hence, if the `total_price_paid` is 7.98 and the `quantity` is 2, then the *per-unit price* is 7.98/2 = 3.99 dollars. Furthermore, if the `coupon_value` is positive, then the total dollar amount that the household spent is `total_price_paid - coupon_value`. The *per-unit cost* to the household is then even lower. For example, if `coupon_value = 3` in the example above, then the per-unit cost to the household is (7.98 - 3)/2 = 2.49 dollars.
+
+(c) The `panel_year` variable in `purchases` is intended *only* to link households to the corresponding household attribute data (income, age, etc.), which are updated yearly. At the beginning of a `panel_year` it need not exactly correspond to the calendar year.
+
+
+## `products`
+
+`products` contains product information for each `upc`/`upc_ver_uc` combination.
+
+Inspect the data.
+
+Note that products are organized into departments (e.g. DAIRY), product groups (e.g. YOGURT), and product modules (e.g. YOGURT-REFRIGERATED), with corresponding codes and descriptions in the `products` table. 
+
+For this assignment, `products` includes all products in the refrigerated yogurt category (module), which is part of the yogurt product group. Products in other categories are not included.
+
+`products` also contains brand codes and brand descriptions, such as CHOBANI or YOPLAIT. You will often see the brand description CTL BR, which stands for *control brand*, i.e. private label brand. Brands are identified using either the `brand_code_uc` or `brand_descr` variables, and are sold as different products (`upc`/`upc_ver_uc`) that differ along size, form, or flavor.
+
+`multi` indicates the number of units in a multi-pack (a multi-pack is a pack size such that `multi > 1`). `size1_amount` is the volume, measured in `size1_units`. For example, if `size1_amount` is 6 and `size1_units` is OZ, then the UPC contains 6 ounces. Note that in the `products` table for refrigerated yogurts, the product volume is always measured in ounces (OZ).
+
+
+## `households`
+
+`households` contains household-level information and demographics. The table is included for reference, but will not be used in the assignment. Only a subset of all columns in the original data, including income, age, and education, are included. Note that the primary key of `household` is `(household_id, panel_year)`. This is also the foreign key to join the demographic information with `purchases` if necessary.
+
+\bigskip
+
+
+For many more details on the data, consult the *Consumer Panel Dataset Manual* (on Canvas).
+
+\newpage
+
+
+
+
+# Data preparation
+
+In our analysis below, we will need to distinguish between purchases of the Chobani brand and other yogurt products. Also, to calculate purchase volume metrics, we need to know the pack size and if a product is a multi-pack. Hence, we need to join this product information with the `purchases` table.
+
+\bigskip
+
+
+(1) Create a column that you may call `is_chobani` in the `products` table. The data type of `is_chobani` should be a logical (`TRUE`/`FALSE`) or, equivalently, a 0/1 dummy variable indicating if a product is sold under the Chobani brand. You can create this variable using the `str_detect` function in the `stringr` package (this package will automatically be loaded as part of the tidyverse). The usage is:
+
+    `str_detect(string_column, pattern)`
+    
+    `string_column` is a column in the data, and `pattern` is some string that you want to find in `string_column`. In our example, you can create (`mutate`) the `is_chobani` column as follows:
+    
+    `is_chobani =  str_detect(brand_descr, "CHOBANI")`
+    
+(2) To minimize memory usage, you should avoid joining unnecessary columns, especially if the final table is large, as in the example of `purchases`. Hence, create a new table (e.g. `product_info`) that contains only the columns in `products` that are needed for the analysis. The columns that you will need are:
+
+    `upc`, `upc_ver_uc`, `size1_amount`, `multi`, `is_chobani`
+    
+    Note that you can combine the creation of the `is_chobani` variable and the selection of the needed columns using the pipe.
+
+(3) Join `product_info` to purchases using an inner join (the left table in this join is `purchases`). What is the foreign key that is used to perform the join?
+
+    You may verify that a small number of rows are dropped from the original `purchases` table when you perform the inner join, because a few products in `purchases` have no match in `products`. Why? We do not know for sure, but small data inconsistencies are expected if we work with large data bases.
+
+\newpage
+
+
+
+
+# Aggregate sales, quantity, and share evolution
+
+Our first goal is to document the evolution of total and per-household dollar sales, purchase quantities, and market shares of Chobani in the refrigerated yogurt category. These summary measures are obtained by aggregating dollar sales and  purchase quantities over all households. The resulting summary data are at the month-level.
+
+\bigskip
+
+
+(1) The `purchases` data are at the (`household_id`, `purchase_date`, `retailer_code`, `upc`, `upc_ver_uc`) level. In addition, the full primary key of the table contains the `transaction_part` column. To aggregate the data at the monthly level, we simply need to add an additional column, `month`, that we can create as follows:
+
+    > `month = floor_date(purchase_date, "month")`
+
+    `floor_date` is part of the `lubridate` package, which you need to explicitly load in addition to the tidyverse.
+
+    The `floor_date` function assigns the date variable to the first date (day) at the specified time aggregation level, which is `month` in the example above (other aggregation levels include `week`, `quarter`, and `year`). For example, a transaction on February 24, 2010, will then be assigned to the date February 1, 2010. `month` will still be recognized by R as a date variable, which is very useful especially when we plot a time series graph with the date on the x-axis.
+
+    To learn more about how to work with dates in the tidyverse read the chapter on "Dates and times" in [R for Data Science](http://r4ds.had.co.nz).
+    
+(2) Once you have created the `month` variable you can create aggregate, monthly data by using a split-apply-combine strategy based on `group_by` and `summarize`. The aggregation is over all household-level transactions in a given month.
+
+    Create the following monthly summary columns:
+
+    (i) Dollar spending in the category
+    (i) Dollar spending for Chobani
+    (i) Purchase quantity in the category
+    (i) Purchase quantity for Chobani
+    (i) Number of unique households observed in a month
+    
+    \medskip
+    
+    **Notes and hints**:
+    
+    - To obtain dollar spending, sum (`sum`) over
+    
+    > `total_price_paid - coupon_value`
+    
+    - You can measure purchase quantities in **equivalent units**, in this example ounces. To calculate the total ounces in a transaction use:
+    
+    > `size1_amount*multi*quantity`
+    
+    - To obtain spending or quantities for Chobani, use the `is_chobani` variable (R will interpret the value `FALSE` as 0 and `TRUE` as 1). For example:
+    
+    > `is_chobani*(total_price_paid - coupon_value)`
+
+    - To obtain the unique number of households, use
+    
+    > `n_distinct(household_id)`
+
+(3) Use the aggregate summary data to calculate:
+
+    (vi) Dollar spending per household
+    (i) Dollar spending per household for Chobani
+    (i) Purchase quantitiy per household
+    (i) Purchase quantitiy per household for Chobani
+    (i) Dollar market share of Chobani in the yogurt category
+    (i) Quantity (ounces) market share of Chobani in the yogurt category
+    
+(4) Provide time-series graphs to document the evolution of:
+
+    (a) Total yogurt category and total Chobani dollar spending
+    (b) Yogurt category and Chobani dollar spending per household
+    (c) Yogurt category and Chobani purchase quantities (ounces) per household
+    (d) Dollar and quantity market shares of Chobani
+    
+    Note: In (a) you will see an upward jump in the spending measures at the beginning of 2007, which is due to an increase in the Homescan panelists at the beginning of 2007. Correspondingly, (b) and (c) are better and generally more easily interpretable measures of buying behavior.
+    
+(5) **Discuss the main insights from the data analysis in (a)-(d). Was the launch of Chobani successful?**
+
+\bigskip
+
+
+Some hints on how to create the time-series graphs. The easiest approach is to plot each variable separately. However, you may want to combine each pair of variables in (4a)-(4d) into one single graph. You can do  this as follows:
+
+First, pivot (reshape) the needed columns from wide to long format. For example, to stack the total yogurt spending and total Chobani spending columns on top of each other, use:
+
+```{r, eval = FALSE}
+purchases_month_long = purchases_month %>%
+   select(month, spend_yogurt, spend_chobani) %>%
+   pivot_longer(cols = c(spend_yogurt, spend_chobani),
+                names_to = "variable_name", values_to = "spend")
+```
+
+Of course you need to adapt the code to match the table and column names that you choose in your own work. In my example above, the final table will contain a column, `variable_name`, that indicates if the values in the `spend` column are for yogurt spending (`spend_yogurt`) or Chobani spending (`spend_chobani`). 
+
+Second, when you plot the time-series graph, add `color = variable_name` to the aesthetic mapping. This mapping tells ggplot to take each value of `variable_name` as a separate data group, and to highlight the different data groups using a different color in the plot.
+
+```{r, eval = FALSE}
+ggplot(purchases_month_long,
+       aes(x = month, y = spend, color = variable_name)) +
+   geom_line()
+```
+
+Optionally, you can consult the Appendix for further details on how to adjust the settings for the different data groups.
+
+\newpage
+
+
+
+
+# Household-level buying and adoption behavior
+
+We now take a deeper look at the household-level purchase and adoption behavior for Chobani. We focus on the following four measures:
+
+(i) **Penetration rate**: The percentage of households who buy Chobani
+
+(i) **Buying rate**: Dollar spending or purchase quantity (ounces) of Chobani among households who buy Chobani
+
+(i) **Trial rate**: Percentage of households who buy Chobani for the first time
+
+(i) **Repeat**: Percentage of households who buy Chobani and have bought Chobani in the past
+
+We will calculate these measures at the monthly level, although other time period definitions (e.g. quarter or year) provide useful summary statistics, too.
+
+When interpreting the result note that the population of households used in the analysis is the population of yogurt buyers, i.e. households who have made at least one purchase in the refrigerated yogurt category.
+
+\bigskip
+
+
+
+(1) First, calculate total Chobani dollar spending and the purchase volume (in ounces) at the household/month level. This is different from your previous analysis, where you calculated these two measures across *all households* in a given month.
+
+(2) In step (1) we create a summary table that includes `household_id` and `month` (the primary key) and the corresponding Chobani dollar spending and purchase volume. If you inspect this table you will see that for many households there are "missing" months, i.e. months without a record (row) in the data. This happens because frequently we do not observe any yogurt transaction for a household in a given month. For the purposes of our data analysis, however, we would like to explicitly include such "missing" months in the data because these observations indicate that the household dollar spending and purchase volume was 0.
+
+    We can add the "missing" rows to the table using the `pad` function in the `padr` package. `pad` automatically figures out the frequency of the data, and then adds rows for the missing time periods (consult the documentation for `pad` for all details). Importantly, `pad` also works for grouped data frames.
+    
+    You can use `pad` as follows (substitute a different name depending on how you name your table in step (1)):
+    
+    ```{r, eval = FALSE}
+purchases_month_hh = purchases_month_hh %>%
+   group_by(household_id) %>%
+   pad(break_above = Inf) %>%
+   replace_na(list(spend_chobani = 0, oz_chobani = 0))
+```
+    
+    Note:
+    
+    - The argument `break_above` in the `pad` function is used as a safeguard. By default, `break_above = 1`, which means that `pad` will not run but instead throw an error message if the number of observations in the padded data frame exceeds 1 million. `break_above = Inf` effectively removes this safeguard (`Inf` means "infinity").
+    - `pad` puts `NA`'s (missing values) into the data columns of the inserted records. The `replace_na()` statement replaces the `NA`'s in the `spend_chobani` and `oz_chobani` columns with 0 (make sure to change the column names to match your own work).
+    - If you record the number of rows before and after padding the table you can see how many data records were added.
+    
+(3) Now calculate the penetration rate and the buying rate.
+
+    The penetration rate is defined for each month as
+    $$\text{no. of households who buy Chobani} / \text{no. of households}$$
+
+    Hints:
+    
+    - Group by month and `summarize` the data.
+    - To calculate the number of households in a month, remember `n_distinct()`.
+    - A dummy variable based on `spend_chobani > 0` will indicate if a household bought Chobani or not (`spend_chobani` is total dollar spending on Chobani by a household in a given month). You can use this dummy variable to compute the total number of Chobani-buying households in a month.
+    
+    The buying rate based on dollar spending is defined for each month as
+    $$\text{total Chobani dollar spending among all households} / \text{no. of households who buy Chobani}$$
+    
+    The buying rate based on purchase quantity (ounces) is defined analogously.
+    
+    \medskip
+    
+    *Note*: During the earliest months in the data, the number of households who buy Chobani is 0. When you calculate the buying rates for these months, you will calculate the ratio $0/0$, which is not defined. R will indicate such values as `NaN` (not a number). There is no need to change these values, because R will not include values that are not actual numbers in a graph, which is exactly what we want.
+    
+(4) Provide graphs of the evolution of the penetration rate and the buying rates. As the buying rates are measured on different scales (dollars and ounces) I do not recommend to show them on the same graph.
+
+(5) Now work again with the table that you created in steps (1) and (2). The goal is to create two indicator (dummy) variables, `adopt_chobani` and `repeat_chobani`. `adopt_chobani` takes the value `TRUE` if a household purchases Chobani for the first time in a month. `repeat_chobani` takes the value `TRUE` if a household repeat-purchases Chobani in a given month. Creating these variables can be quite tricky if you have never performed such a computation, hence I will provide some help.
+
+    (a) First, sort (`arrange`) the table along `household_id` and `month`. The idea is to make sure that for each household the monthly observation are in the correct order.
+    (b) Group by `household_id`.
+    (c) Caclulate an indicator `has_adopted` that takes the value `TRUE` if the household has adopted Chobani in or before a given month. You can use `cumsum(spend_chobani) > 0` to create this indicator. `cumsum` is a cumulative sum over all values in a column up to and including a given row (at the group level).
+    (d) To calculate an indicator `adopt_chobani` that takes the value `TRUE` if the household adopts Chobani in a given month, use `spend_chobani > 0 & lag(has_adopted) == FALSE`. Note that the `lag` operator provides the value of the column in the previous period (here: month). Make sure you understand why this combination of two conditions identifies the adoption period!
+    (e) Using a similar idea as in (d), calculate an indicator `repeat_chobani` that is `TRUE` in a household repeat-purchases Chobani in a given month.
+    
+    Note: In the first observation month for each household, `adopt_chobani` and `repeat_chobani` will be `NA`, because the lag of `has_adopted` is `NA` (we do not know the previous value of a variable in the first observation month).
+    
+(6) Using the results in (5), calculate the trial rate and the repeat rate at the month level. These rates are defined similarly to the penetration rate in (4), with the difference that they are specific to adoption (trial) and repeat purchase events.
+
+    Once you have calculated the trial and repeat rate, also calculate the cumulative trial rate based on the `cumsum` of trial.
+
+    Note: 
+    
+    - Use `na.omit()` on the data to remove rows with missing values before you start calculating trial and repeat.
+    - You can convince yourself that trial and repeat should sum up to the penetration rate. In our calculations there is a small discrepancy, however. Why? Because `adopt_chobani` and `repeat_chobani` will be `NA` in the first observation month (we cannot determine if a Chobani purchase in the first month represents a trial or repeat purchase), whereas a Chobani purchase, without the trial/repeat distinction, is always observed in the data.
+    
+(7) Graph trial, repeat, and the cumulative trial rate.
+
+(8) **Discuss the results**.
+
+\newpage
+
+
+
+
+# Appendix: ggplot2 data group settings
+
+Instead of just one group mapping, you can consider multiple mappings that indicate different aesthetics for different data groups. For example, if you would like different colors and different line types for the separate data types (category and Chobani spending), use:
+
+```{r}
+ggplot(purchases_month_long,
+       aes(x = month, y = spend, color = variable_name, linetype = variable_name)) +
+   geom_line()
+```
+
+\medskip
+
+Other group mappings include `fill`, `size`, `shape`, and `alpha`.
+
+\medskip
+
+To select your own colors, line types, etc., use a matching `scale_<type>-manual` layer, as in this example:
+
+```{r}
+ggplot(purchases_month_long,
+       aes(x = month, y = spend, color = variable_name, linetype = variable_name)) +
+   geom_line() +
+   scale_color_manual(name = "", labels = c("Chobani", "All yogurt"),
+                      values = c("darkblue", "deeppink3")) +
+   scale_linetype_manual(name = "", labels = c("Chobani", "All yogurt"),
+                         values = c("solid", "longdash"))
+```
+
+The `values` option indicates the color and line type settings for each group. `name` indicates the legend title. In this example, `name = ""` removes the title. `labels` specifies the group names in the legend. Experiment to see what happens if you remove the `labels` option from one of the `scale_<type>-manual` layers.
+
+\medskip
+
+Other layers that allow you to adjust the group settings:
+
+`scale_fill_manual`
+
+`scale_size_manual`
+
+`scale_shape_manual`
+
+`scale_alpha_manual`
+
+
