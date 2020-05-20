@@ -231,6 +231,8 @@ for (i in 1:n_delta) {
 best_delta = aic_df[which.min(aic_df$AIC), "delta"]
 ```
 
+The best delta is 0.8
+
 \newpage
 
 
@@ -261,7 +263,7 @@ fit_logistic = detailing_df %>%
 
 summary(fit_logistic)
 ```
-
+The best delta is 0.8 per our calculation in the previous question. The coefficient for the logistic regression for independent variable 'destock' is 0.104594. The P value indicates that the coefficient is statistically significant.
 \newpage
 
 
