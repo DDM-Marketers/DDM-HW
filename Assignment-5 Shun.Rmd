@@ -55,25 +55,15 @@ library(tidyverse)
 
 load("Detailing.Rdata")
 
-physcian_freq = detailing_df %>% 
-   mutate(row = 1) %>% 
-   group_by(physician_id, type) %>% 
-   summarise(visits = sum(row),
-             choice = sum(choice),
-             frequency = choice/visits
-   )
+detailing_df %>% 
+   group_by(physician_id,type) %>% 
+   summarize(frequency = mean(det)) %>% 
+   ggplot(data = ., aes(x = frequency)) + geom_histogram(fill = "light blue", color = "white") + theme_bw() 
 
-
-physcian_freq$frequency[!is.finite(physcian_freq$frequency)] = 0
-physcian_freq$frequency[is.nan(physcian_freq$frequency)] = 0
-
-#sum(is.na(physcian_freq))
-
-physcian_freq %>% 
-ggplot(data = ., aes(x = frequency)) + geom_histogram(fill = "light blue", color = "white") + theme_bw() 
-
-physcian_freq %>% 
-ggplot(data = ., aes(x = frequency)) + geom_histogram(fill = "light blue", color = "white") + facet_grid(. ~ type)+ theme_bw()
+detailing_df %>% 
+   group_by(physician_id,type) %>% 
+   summarize(frequency = mean(det)) %>% 
+   ggplot(data = ., aes(x = frequency)) + geom_histogram(fill = "light blue", color = "white") + facet_grid(. ~ type)+ theme_bw() 
 
 ```
 \newpage
