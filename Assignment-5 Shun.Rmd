@@ -397,6 +397,8 @@ print(long_ROI)
 
 ```
 
+The average increase in the predicted prescription probabilities between mean difference of Pr_2 and Pr_0 is 0.01915. So one additional lag_det detailing call will increase prescription probability by 0.01915. The incremental prescription volumn is then 0.01915 * 15.7=0.3 per additional detailing call for day 31-60. The additional revenue is then 100 * 0.3 = 30. New ROI = (0.024 * 15.7 * 100 + 30 - 60)/60 = 12.9%. Long term ROI is positive, indicating the effect of one additional detailing call in day 1-60 will have positive return. The short-term and long-term ROI indicate that the call schedule should be spread out into 30 days interval instead of multiple calls within a 30-day period. 
+
 \newpage
 
 
