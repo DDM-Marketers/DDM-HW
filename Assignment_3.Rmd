@@ -19,55 +19,75 @@ knitr::opts_chunk$set(echo = TRUE, comment = NA, message = FALSE, eval = TRUE,
 \newpage
 
 # Promotional event planning
-1. Evidence for strong seasonal demand
+\medskip
+
+## Evidence for strong seasonal demand
+\medskip
+
 By looking at the base case number during each promotional period, we can assume that there’s an uptick in demand towards the end of the year (holiday season). In November (event 1) and December (event 2),  the base cases are much larger than earlier months (event 3-5). 
 
 Per event summary, the product has the highest demand around the time of event 2. The base case for event 2 is 1,360, a 87% increase from event 1, a 469% increase from event 3, a 203% increase from event 4, and a 308% increase from event 5. Similarly, the base demand around event 1 is also higher than other events except event 2. The higher base demands around the time of event 2 and event 1 show a strong seasonal demand.
 
-2. Incremental sales response
+\medskip
+
+## Incremental sales response
+\medskip
+
 ```{r}
-eventsummary = data.frame(baseQ = c(728, 1360), baseP = c(2.31, 2.31), promoQ = c(1129, 2303), promoP = c(1.99, 2.31))
+eventsummary = data.frame(baseQ = c(728, 1360), baseP = c(2.31, 2.31),
+                          promoQ = c(1129, 2303), promoP = c(1.99, 2.31))
 eventsummary$baseRev = eventsummary$baseQ*eventsummary$baseP
 eventsummary$promoRev = eventsummary$promoQ*eventsummary$promoP
-eventsummary$incrRevFrac = (eventsummary$promoRev - eventsummary$baseRev)/eventsummary$baseRev
+eventsummary$incrRevFrac = (eventsummary$promoRev -
+                              eventsummary$baseRev)/eventsummary$baseRev
 print(eventsummary)
 ```
 Per summary Table, the incremental sales response for event 1 is 33.60% and for event 2 is 69.33%.
 
+\medskip
 
+## Profitability results
+\medskip
 
-3. Profitability results
 From ROI per event summary, event 5 is the most profitable with a ROI of 53%. Event 2 is the second, with a ROI of 44%. Event 1 does not have a profitable result with the promotion, with a negative ROI of -2%. Event 3, and 4 are even worse with much more negative ROIs of -22% and -79%.
 
 Comparing Event 4 and Event 5, ROI ranges from -79% to 53%, essentially the percentage of display and the degree of price discount have a significant impact on final ROI. Comparing Event 3 and Event 5, Display tends to be more effective than feature. 
 An effective promotion should generate high percentage of incremental sales compared to the baseline sales. The foregone cash flow or opportunity cost of carrying a price reduction promotion should not be greater than the additional revenue brought in by the promotion. For example, Event 5 occured in slow demand season whose baseline sales were low (333). So for giving up the opportunity cost of 333 x $4.2 = $1399, the promotion earned additional revenue from 602 x $(20-4.2) = $9512, and is hence a successful campaign.
 
+\medskip
 
+##The profitability with forward buying
+\medskip
 
-4. The profitability with forward buying
 ```{r}
-eventsummary2 = data.frame(incrContr = c(8019, 18874), VC = c(4740, 9674), FC = c(2500, 2500))
+eventsummary2 = data.frame(incrContr = c(8019, 18874), VC = c(4740, 9674),
+                           FC = c(2500, 2500))
 eventsummary2$ForwardBuyCost = c(962*2, 962*2)
-eventsummary2$eventCost = eventsummary2$VC + eventsummary2$FC + eventsummary2$ForwardBuyCost
+eventsummary2$eventCost = eventsummary2$VC + eventsummary2$FC +
+  eventsummary2$ForwardBuyCost
 eventsummary2$grossContr = eventsummary2$incrContr - eventsummary2$eventCost
-eventsummary2$ROI = eventsummary2$grossContr/eventsummary2$incrContr
+eventsummary2$ROI = eventsummary2$grossContr/eventsummary2$eventCost
 print(eventsummary2)
 ```
-The profit for event 1 will be -1145 with a ROI of -14.28% and for event 2 will be 4776 with a ROI of 25.30%.
+The profit for event 1 will be -1145 with a ROI of -12.49% and for event 2 will be 4776 with a ROI of 33.88%.
 
+\medskip
 
-5. The approaches to calculate ROIs
+## The approaches to calculate ROIs
+\medskip
+
 The Booz Allen Hamilton (BAH) approach and the one took in class are equally good. The BAH method includes both the baseline consumption as well as the incremental sales volume when calculating variable costs, this implies the assumption that during planning the promotion event is part of the total consideration. While the method we discussed in class compares "with the event" and "without the event" two scenarios and therefore only take into account the baseline consumption in the variable costs to account for the "foregone cash flow" or opportunity cost. For example in question 3, using the method from lecture can quickly tell us if a promotion is worth carrying out or not. Depends on the focus of the study, the BAH method is more applicable when considering each unit sale, while the one took in class is more generally applicable.
 
 ```{r cars}
 summary(cars)
 ```
 
-## Including Plots
+\medskip
+**Including Plots**
 
 You can also embed plots, for example:
 
-```{r pressure, echo=FALSE}
+```{r pressure, echo=FALSE, fig.align="center"}
 plot(pressure)
 ```
 
@@ -125,14 +145,18 @@ my_summary <- function(df, account) {
 
 D_summary = my_summary(hellmans_df, "Dominicks")
 J_summary = my_summary(hellmans_df, "Jewel")
+D_summary = data.frame(D_summary)
+J_summary = data.frame(J_summary)
 print(D_summary)
 print(J_summary)
 
 hellmans_df %>% 
-ggplot(data = ., aes(x=feature, color=account)) + geom_histogram(fill="white") + facet_grid(cols = vars(account))
+ggplot(data = ., aes(x=feature, color=account)) +
+  geom_histogram(fill="white") + facet_grid(cols = vars(account))
 
 hellmans_df %>% 
-ggplot(data = ., aes(x=display, color=account)) + geom_histogram(fill="white") + facet_grid(cols = vars(account))
+ggplot(data = ., aes(x=display, color=account)) +
+  geom_histogram(fill="white") + facet_grid(cols = vars(account))
 
 
 #Correlations
@@ -148,7 +172,7 @@ Feature and Display correlate positively, which means when featuring happens, it
 
 
 
-\newpage
+\bigskip
 
 ## Question 2
 Estimate the log-linear demand model separately for each account, using price as the only explanatory variable. Then add the feature and display variables.
@@ -173,7 +197,8 @@ summary(J_lm)
 
 #Two linear model demand-price graph
 hellmans_df %>% 
-ggplot(data = ., aes(x= log(units), y = log(price), color=account)) + geom_point(size = 1, alpha = 1) +
+ggplot(data = ., aes(x= log(units), y = log(price), color=account)) +
+  geom_point(size = 1, alpha = 1) +
   facet_grid(cols = vars(account)) + geom_smooth(method = "lm", se = FALSE)
 
 #Compare with the feature add model
@@ -202,11 +227,16 @@ filter(account == "Jewel") %>%
 glm(log(units) ~ log(price) + display + feature, data = .)
 summary(J_d_f_lm)
 
-# add display improve the model, reduce deviance. However, add feature just improve it a little bit, since feature and display has high correlation. The elastict drop from 4.5 to 1.8 to 1.1 around for both account. We can consider display and feature are ommited variables for the first model.
+# add display improve the model, reduce deviance.
 ```
+\medskip
+
+Add feature just improve it a little bit, since feature and display has high correlation. The elastict drop from 4.5 to 1.8 to 1.1 around for both account. We can consider display and feature are ommited variables for the first model.
+
 Adding Feature and Display into the regression model reduced the coefficient for Price (from -4.1665 to -1.8432 for Dominick’s and from –4.58359 to -1.89735 for Jewel). This is in line with our expectation because in part 1 we noticed Price and Display and Feature are negatively correlated, so the two variables’ effect was all attributed to Price when we only used Price as the independent variable. In other words, if we only use Price as a dependent variable, then all sales change will be attributed to the change in price. But when we include both Display and Feature, the impact of display and feature is then valuated separately, i.e. when feature or display happens price is usually discounted at the same time, so the coefficient of price decreases.
 
-\newpage
+
+\bigskip
 
 ## Question 3
 Consider the following three promotions: \newline
@@ -270,7 +300,7 @@ print(lift_factor(J_d_f_lm, 0.15, 0.7, 1))
 (c) Lift Factor for Donimick's: 3.217896; Lift Factor for Jewel's: 2.877672;
 
 
-\newpage
+\bigskip
 
 ## Question 4
 Perform an ROI analysis of the three promotions, (a), (b), and (c), separately for the two retail accounts, Dominick’s and Jewel-Osco. The promotions last for one week. Your analysis should follow the approach that we took in class, not the version of this approach taken by Booz Allen Hamilton in the first part of the assignment. \newline
@@ -286,9 +316,12 @@ Consider both: \newline
 • The case where 20 percent of the incremental units as predicted by the event lift are due to stockpiling (purchase acceleration), and hence not truly incremental \newline
 
 ```{r, fig.width = 6, fig.height = 3, fig.align = "center"}
-ROI_Summary <- function(model, TPR = 0, DIS = 0, FEA = 0, fixed_payment_cost = 0, regular_price = 1.2, regular_margin = 0.55, Stockpiling = 0) {
+ROI_Summary <- function(model, TPR = 0, DIS = 0, FEA = 0,
+                        fixed_payment_cost = 0, regular_price = 1.2,
+                        regular_margin = 0.55, Stockpiling = 0) {
 
-baseline_units = exp(predict(model, data.frame(price = regular_price, display = 0, feature = 0),
+baseline_units = exp(predict(model, data.frame(price = regular_price,
+                                               display = 0, feature = 0),
    type = "response"))
 
 total_units = lift_factor(model, TPR, DIS, FEA) * baseline_units
@@ -334,9 +367,11 @@ list("Baseline units" = baseline_units,
 #(a) 
 df1 = data.frame(ROI_Summary(D_d_f_lm, 0.15))
 #(b)
-df2 = data.frame(ROI_Summary(D_d_f_lm, 0.15, 0.7, fixed_payment_cost = 3000))
+df2 = data.frame(ROI_Summary(D_d_f_lm, 0.15, 0.7,
+                             fixed_payment_cost = 3000))
 #(c)
-df3 = data.frame(ROI_Summary(D_d_f_lm, 0.15, 0.7, 1, fixed_payment_cost = 4500))
+df3 = data.frame(ROI_Summary(D_d_f_lm, 0.15, 0.7, 1,
+                             fixed_payment_cost = 4500))
 
 D_df = cbind(data.frame(t(df1)), data.frame(t(df2)), data.frame(t(df3)))
 colnames(D_df) = c("Dominicks(a)", "Dominicks(b)", "Dominicks(c)")
@@ -346,9 +381,11 @@ print(D_df)
 #(a) 
 df1 = data.frame(ROI_Summary(D_d_f_lm, 0.15, Stockpiling = 0.2))
 #(b)
-df2 = data.frame(ROI_Summary(D_d_f_lm, 0.15, 0.7, fixed_payment_cost = 3000, Stockpiling = 0.2))
+df2 = data.frame(ROI_Summary(D_d_f_lm, 0.15, 0.7,
+                             fixed_payment_cost = 3000, Stockpiling = 0.2))
 #(c)
-df3 = data.frame(ROI_Summary(D_d_f_lm, 0.15, 0.7, 1, fixed_payment_cost = 4500, Stockpiling = 0.2))
+df3 = data.frame(ROI_Summary(D_d_f_lm, 0.15, 0.7, 1,
+                             fixed_payment_cost = 4500, Stockpiling = 0.2))
 
 D_20_df = cbind(data.frame(t(df1)), data.frame(t(df2)), data.frame(t(df3)))
 colnames(D_20_df) = c("Dominicks(a)", "Dominicks(b)", "Dominicks(c)")
@@ -370,11 +407,17 @@ print(J_20_df)
 #(a) 
 df1 = data.frame(ROI_Summary(J_d_f_lm, 0.15, Stockpiling = 0.2))
 #(b)
-df2 = data.frame(ROI_Summary(J_d_f_lm, 0.15, 0.7, Stockpiling = 0.2, fixed_payment_cost = 5000))
+df2 = data.frame(ROI_Summary(J_d_f_lm, 0.15, 0.7,
+                             Stockpiling = 0.2, fixed_payment_cost = 5000))
 #(c)
-df3 = data.frame(ROI_Summary(J_d_f_lm, 0.15, 0.7, 1, Stockpiling = 0.2, fixed_payment_cost = 6800))
+df3 = data.frame(ROI_Summary(J_d_f_lm, 0.15, 0.7, 1,
+                             Stockpiling = 0.2, fixed_payment_cost = 6800))
 
 J_20_df = cbind(data.frame(t(df1)), data.frame(t(df2)), data.frame(t(df3)))
 colnames(J_20_df) = c("Jewel(a)", "Jewel(b)", "Jewel(c)")
 print(J_20_df)
 ```
+\medskip
+For Dominick's, if no stockpiling, promotion (a) does not result in positive ROI, while (b) and (c) result in considerable positive ROI which indicates that display and feature together with price reduction will be effective marketing strategy. If stockpiling occurs, promotion (a) and (b) do not show positive ROI and (c) only shows small positive effect. 
+For Jewel, if no stockpiling, promotion (a) is not profitable while promotion (b) and (c) show considerable positive ROI. If stockpiling occurs, only promotion (c) returns positive ROI. 
+These results show that when running promotions, the marketing manager need to be aware of the potential forward purchase and limit the degree of stockpiling; otherwise the promotion might not be successful.
