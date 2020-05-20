@@ -170,6 +170,8 @@ AIC(fit_logistic)
 
 \bigskip
 
+The AIC for the logistic regression is lower than the linear regression, better to predict probability for the subscriptions.
+
 The repetitive grid search process above can be easily automated using a loop. In R, the syntax for a basic loop is as follows:
 
 ```{r}
@@ -235,7 +237,7 @@ for (i in 1:n_delta) {
 best_delta = aic_df[which.min(aic_df$AIC), "delta"]
 ```
 
-The best delta is 0.8
+The best delta is 0.8. It is close to the value from regression estimation, verifying the validity of the estimations.
 
 \newpage
 

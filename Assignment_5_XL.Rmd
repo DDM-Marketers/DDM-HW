@@ -72,7 +72,10 @@ Show a histogram of detailing to document how frequently doctors are exposed to 
 hist(detailing_df$choice)
 detailing_type = detailing_df %>%
    group_by(type) %>%
-   summarize(detailing = sum(choice*(det+lag_det)))
+   summarize(detailing = mean(det))
+detailing_phid = detailing_df %>%
+  group_by(physician_id) %>%
+  summarize(detailing = mean(det))
 plot(detailing_type$type, detailing_type$detailing)
 ```
 \newpage
@@ -324,6 +327,7 @@ detailing_df_ds1 = detailing_df_ds1 %>%
   mutate(delta_prob = Pr_1 - Pr_0) %>%
   mutate(delta_pres = delta_prob*num_pati) %>%
   mutate(ROI = (delta_pres*mr-mc)/mc)
+mean(detailing_df_ds1$ROI)
 ```
 
 ## Long-run ROI
@@ -340,12 +344,14 @@ To calculate the change in the detailing stock for a one-unit increase in `lag_d
 Now calculate the long-run ROI based on the total incremental prescription volume, i.e. the sum of the total incremental volume in this period and in the next period. Do the short-run and long-run ROIs have the same implications for how the currently used detailing schedule should be adjusted?
 
 ```{r}
-detailing_df_lagds1 = detailing_df %>%
-  mutate(detstock = detstock + delta) %>%
-  mutate(Pr_1 = predict(fit_logistic, data = ., type = 'response')) %>%
-  mutate(delta_prob = Pr_1 - Pr_0) %>%
+detailing_df_lagds1 = detailing_df_ds1 %>%
+  mutate(detstock = detstock + delta)
+detailing_df_lagds1 = detailing_df_lagds1 %>%
+  mutate(Pr_1lag = predict(fit_logistic, data = ., type = 'response')) %>%
+  mutate(delta_prob = Pr_1lag - Pr_0) %>%
   mutate(delta_pres = delta_prob*num_pati) %>%
   mutate(ROI = (delta_pres*mr-mc)/mc)
+mean(detailing_df_lagds1$ROI)
 ```
 \newpage
 
