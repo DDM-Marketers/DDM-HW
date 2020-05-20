@@ -98,7 +98,7 @@ summary(short_lm)
 
 ```
 
-We can see a positive correlation between the amount of detailing and the physician's choice to prescribe Cialis. The coefficient is 0.035205, meaning when detailing increases by 1, the probability of the physician prescribing the drug increases by 3.52%. t value of the coefficient is 10.02 > 2, and the P value indicates that the results are statistically significant. 
+**We can see a positive correlation between the amount of detailing and the physician's choice to prescribe Cialis. The coefficient is 0.035205, meaning when detailing increases by 1, the probability of the physician prescribing the drug increases by 3.52%. t value of the coefficient is 10.02 > 2, and the P value indicates that the results are statistically significant. **
 
 ## Long-run effect of detailing
 
@@ -129,8 +129,8 @@ delta = coef(long_lm)["lag_det"] / coef(long_lm)["det"]
 print(gamma)
 ```
 
-\beta_1 is 0.024585 based on the linier model; this indicates when detailing increases by 1%, the probability of prescribing increases by 0.024585%. Looking at the P value, this coefficient is statistically significant. \beta_2 is 0.019629 according to the linier model; this indicates when lagged 30-day detailing increases by 1%, the probability of prescribing increases by 0.019629%. The P value also indicates the coefficient is statistically significant. This relationship makes sense as the promotions' current effect should be stronger than lagged effect.The carry-over factor \delta is therefore \delta &= \beta_2 / \beta_1 &=  0.019629 / 0.024585  &= 0.79956. The depreciation factor is therefore 1-0.79956 = 0.2. Carry-over measures what percentage of past advertising consumers remember, in this case, around 0.8 for one lag period (30-60 days ago in this case). From 60-90 days the deffect will be 0.8^2 = 0.64. 
-\gamma is therefore 0.10462 per the equation given above. The long run elasticity of detailing is therefore 0.10462/(1-0.79956)=0.522. THe long-run elasticity is 0.522 times of the short-run elasticity. 
+**$\beta_1$ is 0.024585 based on the linier model; this indicates when detailing increases by 1%, the probability of prescribing increases by 0.024585%. Looking at the P value, this coefficient is statistically significant. $\beta_2$ is 0.019629 according to the linier model; this indicates when lagged 30-day detailing increases by 1%, the probability of prescribing increases by 0.019629%. The P value also indicates the coefficient is statistically significant. This relationship makes sense as the promotions' current effect should be stronger than lagged effect.The carry-over factor $\delta$ is therefore $\delta$ &= $\beta_2$ / $\beta_1$ &=  0.019629 / 0.024585  &= 0.79956. The depreciation factor is therefore 1-0.79956 = 0.2. Carry-over measures what percentage of past advertising consumers remember, in this case, around 0.8 for one lag period (30-60 days ago in this case). From 60-90 days the deffect will be 0.8^2 = 0.64. 
+$\gamma$ is therefore 0.10462 per the equation given above. The long run elasticity of detailing is therefore 0.10462/(1-0.79956)=0.522. THe long-run elasticity is 0.522 times of the short-run elasticity.**
 
 \newpage
 
@@ -237,7 +237,7 @@ for (i in 1:n_delta) {
 best_delta = aic_df[which.min(aic_df$AIC), "delta"]
 ```
 
-The best delta is 0.8. It is close to the value from regression estimation, verifying the validity of the estimations.
+**The best delta is 0.8. It is close to the value from regression estimation, verifying the validity of the estimations.**
 
 \newpage
 
@@ -269,7 +269,7 @@ fit_logistic = detailing_df %>%
 
 summary(fit_logistic)
 ```
-The best delta is 0.8 per our calculation in the previous question. The coefficient for the logistic regression for independent variable 'destock' is 0.104594. The P value indicates that the coefficient is statistically significant.
+**The best delta is 0.8 per our calculation in the previous question. The coefficient for the logistic regression for independent variable 'destock' is 0.104594. The P value indicates that the coefficient is statistically significant.**
 \newpage
 
 
@@ -352,7 +352,7 @@ Calculate the average increase in the predicted prescription probabilities based
 mean(Pr_1) - mean(Pr_0)
 
 ```
-The average increase in the predicted prescription probabilities between Pr_1 and Pr_0 is 0.024. So one additional detailing call will increase the probability of prescription by 2.4%. Directionally this is in line with the estimate of the effect of detailing from the liner probability model. 
+**The average increase in the predicted prescription probabilities between Pr_1 and Pr_0 is 0.024. So one additional detailing call will increase the probability of prescription by 2.4%. Directionally this is in line with the estimate of the effect of detailing from the liner probability model. **
 
 ## Short-run ROI
 
@@ -371,7 +371,7 @@ Cost = 60
 short_ROI = (incremental_revenue - Cost)/Cost
 print(short_ROI)
 ```
-For one additional detailing call, the incremental prescription volume is 0.024 * 15.7 = 0.3768. ROI is therefore (0.3768 * 100 - 60) / 60 = -37.2%. The ROI is negative. We recommend not to conduct additional detailing calls based on the negative ROI. 
+**For one additional detailing call, the incremental prescription volume is 0.024 * 15.7 = 0.3768. ROI is therefore (0.3768 * 100 - 60) / 60 = -37.2%. The ROI is negative. We recommend not to conduct additional detailing calls based on the negative ROI. **
 
 ## Long-run ROI
 
@@ -403,7 +403,7 @@ print(long_ROI)
 
 ```
 
-The average increase in the predicted prescription probabilities between mean difference of Pr_2 and Pr_0 is 0.01915. So one additional lag_det detailing call will increase prescription probability by 0.01915. The incremental prescription volumn is then 0.01915 * 15.7=0.3 per additional detailing call for day 31-60. The additional revenue is then 100 * 0.3 = 30. New ROI = (0.024 * 15.7 * 100 + 30 - 60)/60 = 12.9%. Long term ROI is positive, indicating the effect of one additional detailing call in day 1-60 will have positive return. The short-term and long-term ROI indicate that the call schedule should be spread out into 30 days interval instead of multiple calls within a 30-day period. 
+**The average increase in the predicted prescription probabilities between mean difference of Pr_2 and Pr_0 is 0.01915. So one additional lag_det detailing call will increase prescription probability by 0.01915. The incremental prescription volumn is then 0.01915 * 15.7=0.3 per additional detailing call for day 31-60. The additional revenue is then 100 * 0.3 = 30. New ROI = (0.024 * 15.7 * 100 + 30 - 60)/60 = 12.9%. Long term ROI is positive, indicating the effect of one additional detailing call in day 1-60 will have positive return. The short-term and long-term ROI indicate that the call schedule should be spread out into 30 days interval instead of multiple calls within a 30-day period. **
 
 \newpage
 
@@ -460,45 +460,9 @@ result = rbind(Type_ROI(1, 1.9), Type_ROI(2, 7.2), Type_ROI(3, 30.2))
 print(result)
 ```
 
-Based on the table above, short run ROI and long run ROI for both type 1 and type 2 physician are negative. Only type 3 physician has positive long run ROI. The company should allocate detailing spending to type 3 physicians, which offers the highest ROI. 
-\newpage
+**Based on the table above, short run ROI and long run ROI for both type 1 and type 2 physician are negative. Only type 3 physician has positive long run ROI. The company should allocate detailing spending to type 3 physicians, which offers the highest ROI. **
 
 
-
-Once again, if you repeatedly perform calculations that have many steps you may, **optionally**, automate the task. Below is a script that loops over all physician types `k`. The script subsets the physician type-specific data, estimates the logistic regression model, and then predicts the incremental probabilities.
-
-\medskip
-
-```{r}
-# Summary data frame: Incremental prescription probabilities by physician type
-type_df = data.frame(
-   type         = 1:3,
-   diff_Pr      = 0,         # Effect in period of detailing increase
-   diff_Pr_next = 0          # Effect one period after the detailing increase
-)
-
-# Loop over all physician types
-for (k in 1:3) {
-   
-   # Choose data for type k
-   detailing_type_k = <choose type k data from detailing_df>
-   
-   # Predict prescription probabilities for type k
-   fit_type_k = <logistic regression for type k>
-   
-   # Effect on prescription probability from a one unit increase in detailing
-   Pr_0 = predict(fit_type_k, type = "response")
-   Pr_1 = <predicted probability for type k from 1 unit increase in detailing>
-   
-   type_df[k, "diff_Pr"] = mean(Pr_1 - Pr_0)
-
-   # Effect on the prescription probability in the next period
-   Pr_1_next = <predicted probability in next period for type k
-                from 1 unit increase in detailing in this period>
-  
-   type_df[k, "diff_Pr_next"] = mean(Pr_1_next - Pr_0)
-}
-```
 
 
 
