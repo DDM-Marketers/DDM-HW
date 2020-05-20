@@ -365,7 +365,7 @@ Cost = 831 * 60
 short_ROI = (incremental_revenue - Cost)/Cost
 print(short_ROI)
 ```
-
+The ROI is negative. We recommend not to conduct additional detailing calls based on the negative ROI. 
 
 ## Long-run ROI
 
