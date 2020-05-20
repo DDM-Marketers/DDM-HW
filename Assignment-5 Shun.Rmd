@@ -95,6 +95,8 @@ summary(short_lm)
 
 ```
 
+We can see a positive correlation between the amount of detailing and the physician's choice to prescribe Cialis. The coefficient is 0.15, meaning when detailing increases by 1%, the probability of the physician prescribing the drug increases by 0.15%. Z score of the coefficient is 9.758 > 2, and the P value indicates that the results are statistically significant. 
+
 ## Long-run effect of detailing
 
 Now allow for long-run effects of detailing. Re-estimate the linear probability model, now also including lagged detailing as an independent variable.
