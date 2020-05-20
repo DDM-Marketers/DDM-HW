@@ -1,18 +1,28 @@
 ---
-title: "Assignment 5: Detailing Effects and ROI Estimation"
+title: 'Assignment 5: Detailing Effects and ROI Estimation'
 author: "Günter J. Hitsch"
 date: "May 17, 2020"
 output:
+  html_document:
+    df_print: paged
+    toc: yes
   pdf_document:
     number_sections: yes
     toc: yes
-urlcolor: blue
 graphics: yes
+urlcolor: blue
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, comment = NA, message = FALSE, eval = FALSE, 
-                      fig.width = 4.5, fig.height = 3, fig.align = "right")
+knitr::opts_chunk$set(
+	eval = TRUE,
+	echo = TRUE,
+	fig.align = "right",
+	fig.height = 3,
+	fig.width = 4.5,
+	message = FALSE,
+	comment = NA
+)
 ```
 
 \setlength{\parskip}{6pt}
@@ -46,7 +56,7 @@ The variables in the data file are:
     library(dplyr)
     library(tidyr)
     library(lfe)
-   load(Detailing.Rdata)
+    load('Detailing.RData')
 ```
 
 \newpage
@@ -60,6 +70,10 @@ Show a histogram of detailing to document how frequently doctors are exposed to 
 
 ```{r}
 hist(detailing_df$choice)
+detailing_type = detailing_df %>%
+   group_by(type) %>%
+   summarize(detailing = sum(choice*(det+lag_det)))
+plot(detailing_type$type, detailing_type$detailing)
 ```
 \newpage
 
@@ -72,6 +86,9 @@ hist(detailing_df$choice)
 
 Estimate a linear probability model to predict the prescription choice of Cialis using the amount of current detailing. The dependent variable is $y = \mathtt{choice}$. For now do not use lags. Interpret the detailing coefficient estimate.
 
+```{r}
+lm_sr = glm(choice ~ det, data = detailing_df)
+```
 
 ## Long-run effect of detailing
 
@@ -91,6 +108,17 @@ Using the estimated regression coefficients, $\beta_1$ and $\beta_2$, infer the 
 
 Interpret the estimate of $\gamma$ and the estimated carry-over.
 
+```{r}
+lm_lr = lm(choice ~ det + lag_det, data = detailing_df)
+lm_lr_beta1 = lm_lr$coefficients[2]
+lm_lr_beta2 = lm_lr$coefficients[3]
+gamma_regest = lm_lr_beta1
+delta_regest = lm_lr_beta2/gamma_regest
+data.frame(gamma = gamma_regest, delta = delta_regest)
+# The gamma is estimiated to be,
+# The carry over factor is estimated to be,
+```
+The gamma is estimated to be `r gamma_regest`, the carry over factor is estimated to be `r delta_regest`
 \newpage
 
 
@@ -111,29 +139,30 @@ The AIC is used for model selection. Among all candidate models, based on differ
 Note that the AIC can be directly calculated from a linear probability or logistic regression (more generally: GLM) model output:
 
 ```{r}
-fit = lm(...)
-AIC(fit)
+AIC_summary = data.frame(delta=seq(0,0.99,by=0.01),linear=numeric(100), logistic=numeric(100))
+for (i in seq(1:100)) {
+  delta = AIC_summary$delta[i]
+  detailing_df$detstock = detailing_df$det + delta*detailing_df$lag_det
+  fit = lm(choice ~ detstock, data = detailing_df)
+  fit_logistic = glm(choice ~ detstock, data = detailing_df, family = binomial)
+  AIC_summary$linear[i] = AIC(fit)
+  AIC_summary$logistic[i] = AIC(fit_logistic)
+}
 
-fit_logistic = glm(...)
-AIC(fit_logistic)
+AIC_linear_min = min(AIC_summary$linear)
+AIC_linear_min_delta = AIC_summary$delta[which.min(AIC_summary$linear)]
+AIC_logistic_min = min(AIC_summary$logistic)
+AIC_logistic_min_delta = AIC_summary$delta[which.min(AIC_summary$logistic)]
+detailing_df$detstock = detailing_df$det + AIC_linear_min_delta*detailing_df$lag_det
+fit_linear = lm(choice ~ detstock, data = detailing_df)
+detailing_df$detstock = detailing_df$det + AIC_logistic_min_delta*detailing_df$lag_det
+fit_logistic = glm(choice ~ detstock, data = detailing_df, family = binomial)
+detstock_summary = data.frame(gamma = c(gamma_regest, fit_linear$coefficient[2], fit_logistic$coefficient[2]), delta = c(delta_regest, AIC_linear_min_delta, AIC_logistic_min_delta))
 ```
 
 \bigskip
 
-The repetitive grid search process above can be easily automated using a loop. In R, the syntax for a basic loop is as follows:
-
-```{r}
-for (k in a:b) {
-   ...
-}
-```
-
-Here, `a` and `b` are two numbers, and `b` will be larger than `a`. Suppose that `a = 2` and `b = 5`. Then R will loop over the values `k = 2, 3, 4, 5` and execute the code inside the brackets `{...}` for each separate value of `k`.
-
-\newpage
-
-
-Below, the loop is used to estimate the linear probability model separately for each value of $\delta$. The script stores the AIC value for each $\delta$ in the data frame `aic_df`. 
+The $\delta from the grid search is `r AIC_linear_min_delta` and `r AIC_logistic_min_delta` from the linear regression and logistic regression. The results from the regression estimation and the grid searches are close, verifying the validitiy of both methods.
 
 ```{r}
 # Data frame with delta and AIC value columns
@@ -162,7 +191,7 @@ for (i in 1:n_delta) {
 }
 
 # delta value corresponding to lowest AIC value
-best_delta = aic_df[which.min(aic_df$AIC), "delta"]
+delta = aic_df[which.min(aic_df$AIC), "delta"]
 ```
 
 \newpage
@@ -176,6 +205,15 @@ Estimate a logistic regression model that predicts the prescription choice using
 
 Calculate the carry-over factor implied by the logistic regression estimates.
 
+```{r}
+log_lr = glm(choice ~ det + lag_det, data = detailing_df, family = binomial)
+beta1 = log_lr$coefficients[2]
+beta2 = log_lr$coefficients[3]
+gamma = beta1
+delta = beta2/gamma
+```
+The carry-over factor implied by the logistic regression estimates is `r delta`, it is the same as the result of the grid method (both with linear regression and logistic regression). The AIC for the logistic model with the $\delta equal to `r delta` is the smallest. The model is used to predict the prescription.
+
 \medskip
 
 For conceptual clarity when performing the ROI calculations below, estimate a logistic regression model that directly includes the detailing stock as independent variable:
@@ -183,6 +221,12 @@ For conceptual clarity when performing the ROI calculations below, estimate a lo
 (i) Use `mutate` to add a `detstock` variable to the `detailing_df` data frame. When calculating `detstock`, use the carry-over factor, $\delta$, that you estimated above.
 (ii) Estimate a  logistic regression with `detstock` as the independent variable.
 
+```{r}
+detailing_df = detailing_df %>%
+  mutate(detstock = det + delta*lag_det)
+fit_logistic = glm(choice ~ detstock, data = detailing_df, family = binomial)
+summary(fit_logistic)
+```
 Save the logistic regression output, which we need below to predict prescription probabilities.
 
 \newpage
@@ -233,7 +277,7 @@ Predict the prescription probabilities at the sample values of detailing. Summar
 Note: `Pr_0`, as created in the first code chunk above, is a vector, not a data frame. If you use ggplot2 to plot a histogram you either need to convert `Pr_0` to a data frame or, alternatively, add `Pr_0` to an existing data frame such as `detailing_df`.
 
 ```{r}
-ggplot(as.data.frame(Pr_0), aes(x = Pr_0)) + ...
+ggplot(detailing_df, aes(x = Pr_0)) + geom_histogram(color = 'blue', fill = 'blue')
 ```
 
 \medskip
@@ -253,9 +297,12 @@ Pr_1 = predict(fit_logistic, newdata = new_detailing_df, type = "response")
 Or you can use the pipe, which avoids having to copy the original data.
 
 ```{r}
-Pr_1 = detailing_df %>%
-   mutate(<add 1 to detstock>) %>%
-   predict(fit_logistic, newdata = ., type = "response")
+detailing_df_ds1 = detailing_df %>%
+   mutate(detstock = detstock + 1) %>%
+   mutate(Pr_1 = predict(fit_logistic, newdata = ., type = "response"))
+detailing_df_ds1 %>%
+  select(Pr_0, Pr_1) %>%
+  ggplot(data = .) + geom_histogram(aes(Pr_0), color = 'blue', fill = 'blue', position = 'dodge') + geom_histogram(aes(Pr_1), color = 'pink', fill = 'pink', position = 'dodge')
 ```
 
 \medskip
@@ -269,6 +316,15 @@ Now predict the incremental prescription volume and the corresponding incrementa
 
 You may use Excel to predict the ROIs.
 
+```{r}
+num_pati = 15.7
+mr = 100
+mc = 60
+detailing_df_ds1 = detailing_df_ds1 %>%
+  mutate(delta_prob = Pr_1 - Pr_0) %>%
+  mutate(delta_pres = delta_prob*num_pati) %>%
+  mutate(ROI = (delta_pres*mr-mc)/mc)
+```
 
 ## Long-run ROI
 
@@ -283,6 +339,14 @@ To calculate the change in the detailing stock for a one-unit increase in `lag_d
 
 Now calculate the long-run ROI based on the total incremental prescription volume, i.e. the sum of the total incremental volume in this period and in the next period. Do the short-run and long-run ROIs have the same implications for how the currently used detailing schedule should be adjusted?
 
+```{r}
+detailing_df_lagds1 = detailing_df %>%
+  mutate(detstock = detstock + delta) %>%
+  mutate(Pr_1 = predict(fit_logistic, data = ., type = 'response')) %>%
+  mutate(delta_prob = Pr_1 - Pr_0) %>%
+  mutate(delta_pres = delta_prob*num_pati) %>%
+  mutate(ROI = (delta_pres*mr-mc)/mc)
+```
 \newpage
 
 
@@ -325,7 +389,14 @@ type_df = data.frame(
 for (k in 1:3) {
    
    # Choose data for type k
-   detailing_type_k = <choose type k data from detailing_df>
+   detailing_type_k = detailing_df[detailing_df$type == k,]
+     fit_logistic_k = glm(choice ~ detstock, data = detailing_type_k, family = 'binomial')
+     detailing_type_k = detailing_type_k %>%
+       mutate(detstock = detstock + 1) %>%
+       mutate(Pr_1 = predict(fit_logistic_k, data = ., type = 'response')) %>%
+       mutate(delta_prob = Pr_1 - Pr_0) %>%
+       mutate(delta_pres = delta_prob*num_pati) %>%
+       mutate(ROI = (delta_pres*mr-mc)/mc)
    
    # Predict prescription probabilities for type k
    fit_type_k = <logistic regression for type k>
