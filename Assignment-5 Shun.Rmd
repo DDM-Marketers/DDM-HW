@@ -57,6 +57,14 @@ load("Detailing.Rdata")
 
 detailing_df %>% 
    group_by(physician_id,type) %>% 
+   summarize(frequency = mean(det))
+
+detailing_df %>% 
+   group_by(type) %>% 
+   summarize(frequency = mean(det))
+
+detailing_df %>% 
+   group_by(physician_id,type) %>% 
    summarize(frequency = mean(det)) %>% 
    ggplot(data = ., aes(x = frequency)) + geom_histogram(fill = "light blue", color = "white") + theme_bw() 
 
@@ -64,6 +72,11 @@ detailing_df %>%
    group_by(physician_id,type) %>% 
    summarize(frequency = mean(det)) %>% 
    ggplot(data = ., aes(x = frequency)) + geom_histogram(fill = "light blue", color = "white") + facet_grid(. ~ type)+ theme_bw() 
+
+detailing_df %>% 
+   group_by(type) %>% 
+   summarize(frequency = mean(det)) %>% 
+   print()
 
 ```
 \newpage
@@ -79,13 +92,13 @@ Estimate a linear probability model to predict the prescription choice of Cialis
 
 ```{r}
 short_lm = detailing_df %>% 
-   glm(choice ~ det, data = ., family = "binomial")
+   lm(choice ~ det, data = .)
 
 summary(short_lm)
 
 ```
 
-We can see a positive correlation between the amount of detailing and the physician's choice to prescribe Cialis. The coefficient is 0.15, meaning when detailing increases by 1%, the probability of the physician prescribing the drug increases by 0.15%. Z score of the coefficient is 9.758 > 2, and the P value indicates that the results are statistically significant. 
+We can see a positive correlation between the amount of detailing and the physician's choice to prescribe Cialis. The coefficient is 0.035205, meaning when detailing increases by 1, the probability of the physician prescribing the drug increases by 3.52%. t value of the coefficient is 10.02 > 2, and the P value indicates that the results are statistically significant. 
 
 ## Long-run effect of detailing
 
@@ -107,10 +120,11 @@ Interpret the estimate of $\gamma$ and the estimated carry-over.
 
 ```{r}
 long_lm = detailing_df %>% 
-   glm(choice ~  det + lag_det, data = ., family = "binomial")
+   lm(choice ~  det + lag_det, data = .)
 
 summary(long_lm)
-gamma = coef(long_lm)["lag_det"] / coef(long_lm)["det"]
+gamma = coef(long_lm)["det"]
+delta = coef(long_lm)["lag_det"] / coef(long_lm)["det"]
 
 print(gamma)
 ```
@@ -345,12 +359,12 @@ Now predict the incremental prescription volume and the corresponding incrementa
 You may use Excel to predict the ROIs.
 
 ```{r}
-incremental_volumn = (mean(Pr_1) - mean(Pr_0)) * 15.7 * 831
+incremental_volumn = (mean(Pr_1) - mean(Pr_0)) * 15.7
 print(incremental_volumn)
 incremental_revenue = incremental_volumn * 100
 print(incremental_revenue)
 
-Cost = 831 * 60
+Cost = 60
 
 short_ROI = (incremental_revenue - Cost)/Cost
 print(short_ROI)
@@ -376,7 +390,7 @@ Pr_2 = detailing_df %>%
    mutate(detstock = detstock + 0.8) %>%
    predict(fit_logistic, newdata = ., type = "response")
 
-long_incremental_volumn = (mean(Pr_1) + mean(Pr_2) - 2*mean(Pr_0)) * 15.7 * 831
+long_incremental_volumn = (mean(Pr_1) + mean(Pr_2) - 2*mean(Pr_0)) * 15.7
 print(long_incremental_volumn)
 long_incremental_revenue = long_incremental_volumn * 100
 print(long_incremental_revenue)
@@ -426,13 +440,13 @@ type_df$Pr_2 = type_df %>%
                mutate(detstock = detstock + 0.8) %>%
                predict(type_glm, newdata = ., type = "response")
 
-n_doc = n_distinct(type_df$physician_id)
-incremental_volumn = (mean(type_df$Pr_1) - mean(type_df$Pr_0)) * n_patients * n_doc
+
+incremental_volumn = (mean(type_df$Pr_1) - mean(type_df$Pr_0)) * n_patients
 incremental_revenue = incremental_volumn * 100
-Cost = n_doc * 60
+Cost = 60
 short_ROI = (incremental_revenue - Cost)/Cost
 
-long_incremental_volumn = (mean(type_df$Pr_1) + mean(type_df$Pr_2) - 2*mean(type_df$Pr_0)) * n_patients * n_doc
+long_incremental_volumn = (mean(type_df$Pr_1) + mean(type_df$Pr_2) - 2*mean(type_df$Pr_0)) * n_patients
 long_incremental_revenue = long_incremental_volumn * 100
 long_ROI = (long_incremental_revenue - Cost)/Cost
    
@@ -441,7 +455,7 @@ return (x)
 }
 
 result = rbind(Type_ROI(1, 1.9), Type_ROI(2, 7.2), Type_ROI(3, 30.2))
-
+print(result)
 ```
 
 \newpage
