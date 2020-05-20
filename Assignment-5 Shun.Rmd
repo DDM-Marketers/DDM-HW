@@ -346,6 +346,7 @@ Calculate the average increase in the predicted prescription probabilities based
 mean(Pr_1) - mean(Pr_0)
 
 ```
+The average increase in the predicted prescription probabilities between Pr_1 and Pr_0 is 0.024. So one additional detailing call will increase the probability of prescription by 2.4%. Directionally this is in line with the estimate of the effect of detailing from the liner probability model. 
 
 ## Short-run ROI
 
