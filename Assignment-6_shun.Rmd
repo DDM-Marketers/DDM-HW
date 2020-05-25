@@ -359,8 +359,12 @@ Once you have estimated the model, you can construct the effect size table in Ex
 Assuming your linear probability model output is called `fit_linear_prob`, you can convert the estimation results into a data frame and then save the estimation results as a csv file:
 
 ```{r}
+
+fit_linear_prob = estimation_df[,c(-1, -2, -70)] %>% 
+                lm(churn ~ ., data = .)
+
 linear_prob_results_df = as.data.frame(tidy(fit_linear_prob))
-write_csv(linear_prob_results_df, path = "<file name>.csv")
+write_csv(linear_prob_results_df, path = "Assign6_export.csv")
 ```
 
 Now proceed in Excel, using both the `Cell2Cell-Database-Documentation.xlsx` file and the estimation results files.
@@ -376,9 +380,18 @@ For the code to work ensure that:
 
 (i) Your main data frame, `cell2cell_df`, is in memory, and you have removed all rows with missing values.
 
+```{r}
+cell2cell_df = na.omit(cell2cell_df)
+```
+
 (ii) Either the estimation results object from the linear probability model is called `fit_linear_prob`, or you modify the object name in the third code chunk below.
 
 (iii) The objects `p_e` and `p_v` that contain the mean observed churn rates in the estimation and validation samples are in memory.
+
+```{r}
+p_e = pe
+p_v = pv
+```
 
 If these conditions are met, the code below will work.
 
@@ -433,7 +446,7 @@ kable(effect_sizes_df, digits = 4)
 Alternatively, you can write the effect size table to a csv file:
 
 ```{r}
-write_csv(effect_sizes_df, path = "<file name>.csv")
+write_csv(effect_sizes_df, path = "Assign6_export2.csv")
 ```
 
 \medskip
@@ -441,6 +454,90 @@ write_csv(effect_sizes_df, path = "<file name>.csv")
 **Interpretation of the `change_prob` variable**: For a dummy variable, `change_prob` is the change in the churn probability associated with an increase in the dummy value from 0 to 1. For all other variables, `change_prob` is the change in the churn probability associated with an increse in the value of the variable by one standard deviation.
 
 `change_prob` is defined on the scale from 0 to 100. I.e., if `change_prob` takes the value 0.6, the effect size is a change in the churn probability by 0.6%, not by 60%!
+
+```{r}
+library(gamlr)
+
+y = cell2cell_df$churn
+
+x = cell2cell_df[, c(-1, -2, -3)]
+
+cv.fit <- cv.gamlr(x, y,
+				   lambda.min.ratio=1e-3,
+				   family="binomial",
+				   verb=TRUE)
+
+plot(cv.fit$gamlr)
+
+plot(cv.fit)
+
+c = drop(coef(cv.fit, select="min"))
+
+c[abs(c) > 0.2]
+
+#creditaa, refurb, retcall are most strong and stable
+#check causal about refurb, retcall and creditaa with double lasso
+
+#creditaa
+d1 = x[, 32]
+#refurb
+d2 = x[, 36]
+#retcall
+d3 = x[, 66]
+x = x[, c(-32, -36, -66)]
+
+#double lasso
+
+treat1 <- gamlr(x,d1,lambda.min.ratio=1e-4, family = "binomial")
+
+plot(treat1)
+
+d1hat <- predict(treat1, x, type="response") 
+
+d1hat = drop(d1hat)
+
+cor(d1hat, d1)^2
+
+causal1 <- gamlr(cBind(d1,d1hat,x),y,free=2,lmr=1e-4, , family = "binomial")
+
+coef(causal1)["d1",]
+#which is not 0, so creditaa is causal
+
+treat2 <- gamlr(x,d2,lambda.min.ratio=1e-4, family = "binomial")
+
+plot(treat2)
+
+d2hat <- predict(treat2, x, type="response") 
+
+d2hat = drop(d2hat)
+
+cor(d2hat, d2)^2
+
+causal2 <- gamlr(cBind(d2,d2hat,x),y,free=2,lmr=1e-4, , family = "binomial")
+
+coef(causal2)["d2",]
+#which is not 0, so refurb is causal
+
+treat3 <- gamlr(x,d3,lambda.min.ratio=1e-4, family = "binomial")
+
+plot(treat3)
+
+d3hat <- predict(treat3, x, type="response") 
+
+d3hat = drop(d3hat)
+
+cor(d3hat, d3)^2
+#prefect cover
+
+causal3 <- gamlr(cBind(d3,d3hat,x),y,free=2,lmr=1e-4, , family = "binomial")
+
+coef(causal3)["d3",]
+#it is 0, so retcall is not causal
+
+coef(treat3)
+#the retcall is covered by retcalls.
+
+```
 
 \newpage
 
