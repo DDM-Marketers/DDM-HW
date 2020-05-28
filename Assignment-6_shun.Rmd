@@ -66,6 +66,22 @@ The validation sample, on the other hand, *was not created using oversampling* a
 
 Verify that approximately 50% of observations in the training sample take the value 1, and contrast this number with the *true churn rate*, i.e. the average rate or probability at which customers churn, in the validation sample.
 
+```{r}
+library(tidyverse)
+
+estimation_df = na.omit(cell2cell_df[cell2cell_df$calibrat == 1, ])
+
+validation_df = na.omit(cell2cell_df[cell2cell_df$calibrat == 0, ])
+
+pv = mean(validation_df$churn)
+
+pe = mean(estimation_df$churn)
+
+print(pv)
+
+print(pe)
+```
+
 \newpage
 
 
@@ -89,10 +105,9 @@ A simple way to do this is to install the `broom` and `kable` packages. The `tid
 ```{r}
 library(broom)
 library(knitr)
-library(tidyverse)
-estimation_df = na.omit(cell2cell_df[cell2cell_df$calibrat == 1, ])
 
-validation_df = na.omit(cell2cell_df[cell2cell_df$calibrat == 0, ])
+
+
 
 fit_logistic = estimation_df[,c(-1, -2)] %>% 
                 glm(churn ~ ., data = ., family = "binomial")
