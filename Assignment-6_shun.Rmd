@@ -141,6 +141,8 @@ Calculate the mean of the predicted churn rates and verify that this mean reflec
 
 Recall that the validation sample was chosen without oversampling and indicates the *true churn rate* in the data. Hence, we need to account for the upward bias in the predicted churn probabilities due to oversampling in the estimation sample. How to do this is explained in the next section.
 
+The following independent variables are significant with 95% confidence. 
+
 
 \newpage
 
