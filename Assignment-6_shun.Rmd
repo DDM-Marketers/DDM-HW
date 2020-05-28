@@ -81,7 +81,7 @@ print(pv)
 
 print(pe)
 ```
-
+The churn rate in the training sample is 49.8%, close to 50%, but the true churn rate in the validation sample is much lower, at 1.93%.
 \newpage
 
 
