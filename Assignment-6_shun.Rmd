@@ -97,7 +97,6 @@ The churn rate predicted in the validation sample is 0.4772. The following indep
 
 # Model estimation and prediction: Accounting for oversampling
 
-In the section we will add an offset variable to de-bias the predicted response. 
 (1) Create the offset variable
 
 ```{r}
@@ -167,7 +166,7 @@ head(compare)
 
 ```
 
-(3) Create a summary table that, for each of the scores, contains:
+(3) Create a summary table that for each of the scores, containing mean predicted churn rate, mean observed churn rate, and lift factor. 
     
 ```{r}    
 
@@ -191,7 +190,7 @@ ggplot(aes(x = score, y = ob_churn), data = .) + geom_point() + geom_line() + th
 
 ```
 
-(5) Similarly, provide a lift chart (graph).
+(5) Provide a lift chart (graph).
 
 ```{r}
 
@@ -208,7 +207,7 @@ compare_score[-3]
 
 \medskip
 
-Discuss the results. Do the results provide evidence for the validity of the model?
+
 The results provide evidence for the validity of the model. Because the lift factors have an upward trend, rather than a horizontal line at 100. That means our model can effectively predict the different churn probabilities for different customers. 
 But the model also has limitations because we found that when the customer did churn, our model is not very accurate in predicting churn = 1, but it performed better in predicting customers who didn't churn. 
 
@@ -226,20 +225,7 @@ ggplot(aes(x = churn, y = predict, group = churn, color = churn), data = .) + ge
 
 # Effect sizes: Why do customers churn?
 
-We would like to understand *why* customers churn, which can help us to propose incentives to prevent customer churn. Hence, we now construct a table that contains comparable effect sizes (changes in the churn probability) for all independent variables, as we discussed in class.
-
-Because logistic regression coefficients are not directly interpretable, we first need to estimate a linear probability model that predicts customer churn.
-
-Note: Do *not* use an offset variable when estimating the linear probability model!
-
-Once you have estimated the model, you can construct the effect size table in Excel, or you can use the code below to construct the table in an automated fashion
-
-\medskip
-
-
-## Construct effect size table in Excel
-
-Assuming your linear probability model output is called `fit_linear_prob`, you can convert the estimation results into a data frame and then save the estimation results as a csv file:
+In this section we willcan convert the estimation results into a data frame and then save the estimation results as a csv file:
 
 ```{r}
 
