@@ -97,7 +97,7 @@ mean(validation_predict_df)
 
 \medskip
 
-The churn rate predicted in the validation sample is 0.4772. The following independent variables are significant with 95% confidence. 
+The churn rate predicted in the validation sample is 0.4772. The above table of independent variables are significant with 95% confidence. 
 
 
 \newpage
@@ -432,9 +432,9 @@ The model can be used to roughly test the factor importance but not to predict e
 
 2. What factors drive customer churn? Which factors are particularly important?
 
-From the change probability ranking, the top five factors are 'retcall', 'creditaa', 'eqpdays', 'refurbs' and 'months', excluding the ones with low t values (greater than -2 and smaller than 2). The variable importance are also tested and the top three are 'retcall', 'creditaa' and 'refurbs' (per results and plots from section 6.2).
+From the change probability ranking, the top five factors are 'retcall', 'creditaa', 'eqpdays', 'refurbs' and 'months', excluding the ones with low t values (greater than -2 and smaller than 2). The variable importance are also tested using LASSO and the top three are 'retcall', 'creditaa' and 'refurbs' (per results and plots from section 6.2).
 
-The causality is tested for each of them by double lasso. The factors 'creditaa' and 'refurbs' are causal. The factor 'retcall' is not causal, but highly correlated to 'retcalls'. Variable selection is needed to further improve the model.
+The causality is tested for each of them by double LASSO. The factors 'creditaa' and 'refurbs' are causal. The factor 'retcall' is not causal, but highly correlated to 'retcalls'. Variable selection is needed to further improve the model.
 
 \medskip
 
@@ -442,6 +442,6 @@ The causality is tested for each of them by double lasso. The factors 'creditaa'
 
 Cell2Cell need to offer customers more promotions proactively to prevent them from thinking to churn. Once they start to think of churning to call to the retention team, they are much more likely to churn. When they call, Cell2Cell need to offer more promotions, discounts or extra benefits to prevent them from churning.
 
-Customer segmentation is needed to specifity more targeted strategies to different customers. For high credit rating customers, they are much less likely to churn than normal credit rating customers (change_prob(creditaa) ranking second). Cell2Cell needs to offer more promotions or benefits to the lower credit rating customers than higher. Same for customers buying refurbished devices, longer warranties and discounts would be beneficial to prevent them from churning.
+Customer segmentation is needed to specifity more targeted strategies to different customers. For high credit rating customers, they are less likely to churn than normal credit rating customers (change_prob(creditaa) ranking second). Cell2Cell needs to offer more promotions or benefits to the lower credit rating customers than higher. Same for customers buying refurbished devices, longer warranties and discounts would be beneficial to prevent them from churning.
 
 
