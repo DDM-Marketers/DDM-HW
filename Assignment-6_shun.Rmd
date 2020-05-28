@@ -40,31 +40,11 @@ Address these key issues:
 
 # Data
 
-All data are contained in the file `Cell2Cell.RData`. Please consult the file `Cell2Cell-Database-Documentation.xlsx` for a description of the data and some summary statistics.
-
-Note that *calibration sample* is an alternative term for *training* or *estimation* sample. Hence, the variable `calibrat` indicates if a customer belongs to the training (estimation) sample or to the validation sample.
-
-Inspect the data.
-
-Some variables have missing values, which is common and of no concern (unless the missing values indicate some *systematic* flaws or bias in how the data were constructed). Most estimation methods in R will automatically delete rows with missing values before estimating the model. However, the `predict` methods will yield `NA` values if a row in the data used for prediction contains missing values. Hence, in a situation where you don't need to keep the full data I recommend to remove any observations with missing values before you conduct the main analysis.
-
-Recall from the *Introduction to Data Science in R* guide that you can drop all rows in a data frame that contain missing values using the `na.omit()` function.
-
-\vskip 0.25in
-
-
 **Oversampling**
 
-One important aspect of the data that is that the calibration sample was selected using *oversampling*. Oversampling is a technique to choose a calibration sample such that the values of the outcome (dependent) variable are balanced. In particular, the outcome in one half of the observations takes the value 0 (customer did not churn), and the other half takes the value 1 (the customer churned).
-
-The purpose of oversampling is to obtain more precise estimates (lower standard errors) when estimating a logistic regression model. However, oversampling also results in biased predictions, in our example predicted churn probabilities that are larger than the true churn probabilities. How to correct for this bias is explained further below.
-
-The validation sample, on the other hand, *was not created using oversampling* and represents the *true churn rate* in the data.
+The calibration sample was selected using oversampling, however the validation sample was not created using oversampling and represents the true churn rate in the date. This section we compared and contrasted the churn Rate in the training sample and validation sample. 
 
 \bigskip
-
-
-Verify that approximately 50% of observations in the training sample take the value 1, and contrast this number with the *true churn rate*, i.e. the average rate or probability at which customers churn, in the validation sample.
 
 ```{r}
 library(tidyverse)
@@ -81,7 +61,7 @@ print(pv)
 
 print(pe)
 ```
-The churn rate in the training sample is 49.8%, close to 50%, but the true churn rate in the validation sample is much lower, at 1.93%.
+The churn rate in the training sample is 49.8%, close to 50%, but the true churn rate in the validation sample is much lower, at 1.93%. This verifies that approximately 50% of observations in the training sample take the value, contrasted with the true churn rate in the valiation sample. 
 \newpage
 
 
