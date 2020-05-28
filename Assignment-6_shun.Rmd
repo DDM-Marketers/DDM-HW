@@ -88,77 +88,29 @@ mean(validation_predict_df)
 
 \medskip
 
-The following independent variables are significant with 95% confidence. 
+The churn rate predicted in the validation sample is 0.4772. The following independent variables are significant with 95% confidence. 
 
 
 \newpage
-
 
 
 
 # Model estimation and prediction: Accounting for oversampling
 
-## Explanation
+In the section we will add an offset variable to de-bias the predicted response. 
+(1) Create the offset variable
 
-**Note**: Fully understanding this explanation is not very important, and you can simply skim the section.
-
-\smallskip
-
-The idea of oversampling is as follows. If the response rate in the data is small, there is a strong imbalance between observations with a response of $Y=1$ and a response of $Y=0$. As a consequence, estimating the model is difficult and the estimates will be imprecise, i.e. they will have large standard errors.
-
-The solution: Create a training sample with one half of observations randomly chosen from the original data with response $Y=1$, and the other half randomly chosen from the original data with response $Y=0$. Now estimation is easier and the standard errors will be smaller.
-
-However, when applied to logistic regression, oversampling will result in a biased estimate of the intercept (constant) term, although all other estimates will be unbiased.^[To be technically correct, the other estimates will be *inconsistent*.] Hence, if we do not de-bias (adjust) the intercept, the predicted probabilities will be too large, reflecting the artificial response rate of $\frac{1}{2}$ in the over-sampled training data. 
-
-In order to de-bias the scale of the predicted response (in this example: churn) in the validation sample we need to supply an *offset variable* to the logistic regression model. An offset is a known number that is added to the right-hand side of the regression when estimating the model, and adding the offset will correspondingly change the estimate of the intercept. The offset takes the form:
-$$\text{offset}=\left(\log(\bar{p}_{e})-\log(1-\bar{p}_{e})\right) - \left(\log(\bar{p}_{v})-\log(1-\bar{p}_{v})\right)$$
-
-Here, $\bar{p}_{e}$ is the average response rate in the estimation sample and $\bar{p}_{v}$ is the average response rate in the validation sample.
-
-Then, when we predict the response rate in the validation sample, we set the offset variable to 0.
-
-Why does this work? --- Conceptually, logistic regression is a regression model for the log-odds of the response (outcome) probability,
-$$\log \left(\frac{p}{1-p}\right) = \log(p) - \log(1-p) = \beta_0 + \beta_1 X_1 + \beta_2 X_1 + \dots $$
-
-When we add the offset variable to the right hand side of the regression model the estimation algorithm will "incorporate" the offset in the intercept, $\beta_0$. The effect of setting the offset to 0 is equivalent to subtracting the offset from the intercept. Subtracting the offset amounts to:
-
-(i) Subtracting $\log(\bar{p}_{e})-\log(1-\bar{p}_{e})$, the log-odds of the artificial response rate in the estimation sample, and
-
-(ii) Adding $\log(\bar{p}_{v})-\log(1-\bar{p}_{v})$, the log-odds in the validation sample that reflects the true log-odds in the data.
-
-This process de-biases the predicted response, i.e. restores the correct response level.
-
-Note: *Never use over-sampling to create the validation sample*, otherwise the offset variable approach will not work.
-
-```{r}
-
-offset = (log(pe) - log(1-pe)) - (log(pv) - log(1-pv))
-
-print(offset)
-```
-
-
-\newpage
-
-
-## Implementation
-
-(1) To create the offset variable, `offset_var`, compute the mean observed churn rates in the estimation and training samples, $\bar{p}_{e}$ and $\bar{p}_{v}$.
-
-    Then calculate the offset using the formula
-$$\mathtt{offset\_var} = \left(\log(\bar{p}_{e})-\log(1-\bar{p}_{e})\right) -      \left(\log(\bar{p}_{v})-\log(1-\bar{p}_{v})\right)$$
 ```{r}
 
 offset_var = (log(pe) - log(1-pe)) - (log(pv) - log(1-pv))
 
 print(offset_var)
 ```
-The offset variable is 3.920892
-(2) Add the offset as a new column to the estimation sample. Then estimate the logistic regression model.
+The offset variable is 3.920892.
 
-    To tell `glm` that you want to use `offset_var` you need to use a formula of the form:
+(2) Add the offset as a new column to the estimation sample and estimate the logistic regression model.
 
-    ```{r}
+```{r}
     
 estimation_df$offset_var = offset_var   
     
@@ -168,26 +120,7 @@ fit_logistic = estimation_df[,c(-1, -2)] %>%
 summary(fit_logistic)
 ```
     
-    *Where* you place `offset()` on the right-hand side of the formula is irrelevant.
-    
-    For example, if you use all variables in your data (except `y` and `offset_var`) as independent variables:
-    
-    ```{r, eval = FALSE}
-glm(y ~ . + offset(offset_var), ...)
-```
-
-(3) Set the offset variable `offset_var` to 0 and add it to the validation sample. This is simple: In the validation sample, create a column that has the same name as the offset variable column in the estimation sample, and make sure this column takes values `= 0`.
-
-    Then predict the churn rates in the validation sample.
-    
-    *Note*: When predicting the churn rates you will likely see the warning message, *prediction from a rank-deficient fit may be misleading*. Simply ignore. To suppress the warning message, add `warning = FALSE` to the code chunk header, i.e. `{r, warning = FALSE}`.
-
-
-
-\medskip
-
-
-Calculate the mean of the predicted churn rates and verify that this mean reflects the observed average churn rate in the validation sample.
+(3) Set the offset variable `offset_var` to 0 and add it to the validation sample. Then calculate the predicted churn rates after de-biasing. 
 
 ```{r, warning = FALSE}
 
@@ -200,6 +133,7 @@ mean(validation_predict_df)
 pv
 
 ```
+The mean of the predicted churn rates is 0.0194, which is very close to the observed average churn rate in the validation sample (0.0193). 
 
 \newpage
 
@@ -208,12 +142,7 @@ pv
 
 # Model validation
 
-Provide evidence for the validity of the model using a lift table and a lift chart.
-
-**Note**: All model validation steps are need to be performed in the validation sample.
-
-
-(1) Create a table that contains both the observed `churn` and the predicted churn rate (probability) from the logistic regression model that you estimated in the previous section. You can simply add the predicted churn rate as a new column to the validation sample data frame.
+(1) Create a table that contains both the observed `churn` and the predicted churn rate (probability) from the logistic regression model.
 
 ```{r}
 
@@ -228,11 +157,7 @@ names(compare)[2] <- "predict"
 
 ```
 
-(2) Add a column, `score`, that assigns a number from 1 to 10 to each customer based on the predicted churn rate. Use the `cut_number` function that is part of the `tidyverse` (to be precise, the function is in the `ggplot2` package):
-
-    > `score = cut_number(Pr_churn, n = 10, labels = FALSE)`
-    
-    `cut_number` creates `n` equally sized groups, where group 1 represents customers with the lowest predicted churn rates and `n` (here: `n = 10`) represents customers with the highest predicted churn rates.
+(2) Add a column, `score`, that assigns a number from 1 to 10 to each customer based on the predicted churn rate. 
 
 ```{r}
 
@@ -243,15 +168,6 @@ head(compare)
 ```
 
 (3) Create a summary table that, for each of the scores, contains:
-
-    (i) Mean predicted churn rate
-    (ii) Mean observed churn rate
-    (iii) Lift factor
-    
-    Recall the definition of the lift:
-$$\text{lift in segment }k = 100\cdot\frac{\text{churn rate in segment }k}{\text{average churn rate across all customers}}$$
-
-    Hint: Create the summary table using `group_by` and `summarize`.
     
 ```{r}    
 
