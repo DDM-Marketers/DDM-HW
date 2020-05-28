@@ -228,7 +228,7 @@ But the model also has limitations because we found that when the customer did c
 
 # Effect sizes: Why do customers churn?
 
-In this section we willcan convert the estimation results into a data frame and then save the estimation results as a csv file:
+In this section we will convert the estimation results into a data frame and then save the estimation results as a csv file:
 
 ```{r}
 
