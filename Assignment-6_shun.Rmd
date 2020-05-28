@@ -345,6 +345,8 @@ compare_score[-3]
 \medskip
 
 Discuss the results. Do the results provide evidence for the validity of the model?
+The results provide evidence for the validity of the model. Because the lift factors have an upward trend, rather than a horizontal line at 100. That means our model can effectively predict the different churn probabilities for different customers. 
+But the model also has limitations because we found that when the customer did churn, our model is not very accurate in predicting churn = 1, but it performed better in predicting customers who didn't churn. 
 
 ```{r}
 
