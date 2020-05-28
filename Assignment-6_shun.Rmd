@@ -42,9 +42,7 @@ Address these key issues:
 
 **Oversampling**
 
-The calibration sample was selected using oversampling, however the validation sample was not created using oversampling and represents the true churn rate in the date. This section we compared and contrasted the churn Rate in the training sample and validation sample. 
-
-\bigskip
+The calibration sample was selected using oversampling, however the validation sample was not created using oversampling and represents the true churn rate in the date. This section we will compare and contrast the churn Rate in the training sample and validation sample. 
 
 ```{r}
 library(tidyverse)
@@ -61,7 +59,7 @@ print(pv)
 
 print(pe)
 ```
-The churn rate in the training sample is 49.8%, close to 50%, but the true churn rate in the validation sample is much lower, at 1.93%. This verifies that approximately 50% of observations in the training sample take the value, contrasted with the true churn rate in the valiation sample. 
+The churn rate in the training sample is 49.8%, close to 50%, but the true churn rate in the validation sample is much lower, at 1.93%. This verifies that approximately 50% of observations in the training sample take the value 1, contrasted with the true churn rate in the valiation sample. 
 \newpage
 
 
@@ -69,18 +67,7 @@ The churn rate in the training sample is 49.8%, close to 50%, but the true churn
 
 # Model estimation
 
-Estimate a logit model to predict the conditional (on the customer attributes) churn probability.
-
-- Make sure that you estimate the model using the calibration = estimation/training sample only, where `calibrat` takes the value 1. One straightforward way of achieving this is to create two new data frames, `estimation_df` and `validation_df`, from the original data.
-
-- Obviously, `customer` and `calibrat` should not be included as independent variables in the logistic regression.
-
-\medskip
-
-
-You can display the regression output using `summary`. However, especially when you have a large number of independent variables in the model, it is often convenient to store the regression estimates in a table (data frame).
-
-A simple way to do this is to install the `broom` and `kable` packages. The `tidy` function in the `broom` package converts the regression output (here, the object `fit`) into a data frame. Furthermore, the `kable` function creates a nicely formatted table.
+In this section, we will develop a logistic regression model to predict the conditional (on the customer attributes) churn probability. The model uses the traning sample only and excluded `customer` and `calibrat` as independent variables. 
 
 ```{r}
 library(broom)
@@ -99,20 +86,7 @@ validation_predict_df = predict(fit_logistic, validation_df[,c(-1, -2)], type = 
 mean(validation_predict_df)
 ```
 
-Use the help function, `?kable`, to learn more about the options.
-
 \medskip
-
-Skimming the estimation results, is there evidence that the independent variables may be able to predict differences in churn rates across customers?
-
-\medskip
-
-
-Next, predict (`predict`) the churn rates (probabilities) in the validation sample.
-
-Calculate the mean of the predicted churn rates and verify that this mean reflects the average observed churn rate in the estimation sample, not the mean of the observed churn in the validation sample.
-
-Recall that the validation sample was chosen without oversampling and indicates the *true churn rate* in the data. Hence, we need to account for the upward bias in the predicted churn probabilities due to oversampling in the estimation sample. How to do this is explained in the next section.
 
 The following independent variables are significant with 95% confidence. 
 
