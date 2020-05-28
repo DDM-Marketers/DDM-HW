@@ -81,7 +81,7 @@ print(pv)
 
 print(pe)
 ```
-
+The churn rate in the training sample is 49.8%, close to 50%, but the true churn rate in the validation sample is much lower, at 1.93%.
 \newpage
 
 
@@ -133,6 +133,8 @@ Next, predict (`predict`) the churn rates (probabilities) in the validation samp
 Calculate the mean of the predicted churn rates and verify that this mean reflects the average observed churn rate in the estimation sample, not the mean of the observed churn in the validation sample.
 
 Recall that the validation sample was chosen without oversampling and indicates the *true churn rate* in the data. Hence, we need to account for the upward bias in the predicted churn probabilities due to oversampling in the estimation sample. How to do this is explained in the next section.
+
+The following independent variables are significant with 95% confidence. 
 
 
 \newpage
@@ -197,7 +199,7 @@ offset_var = (log(pe) - log(1-pe)) - (log(pv) - log(1-pv))
 
 print(offset_var)
 ```
-
+The offset variable is 3.920892
 (2) Add the offset as a new column to the estimation sample. Then estimate the logistic regression model.
 
     To tell `glm` that you want to use `offset_var` you need to use a formula of the form:
@@ -337,6 +339,8 @@ compare_score[-3]
 \medskip
 
 Discuss the results. Do the results provide evidence for the validity of the model?
+The results provide evidence for the validity of the model. Because the lift factors have an upward trend, rather than a horizontal line at 100. That means our model can effectively predict the different churn probabilities for different customers. 
+But the model also has limitations because we found that when the customer did churn, our model is not very accurate in predicting churn = 1, but it performed better in predicting customers who didn't churn. 
 
 ```{r}
 
