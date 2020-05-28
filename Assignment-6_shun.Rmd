@@ -106,24 +106,17 @@ A simple way to do this is to install the `broom` and `kable` packages. The `tid
 library(broom)
 library(knitr)
 
-
-
-
 fit_logistic = estimation_df[,c(-1, -2)] %>% 
                 glm(churn ~ ., data = ., family = "binomial")
 
 estimation_results_df = as.data.frame(tidy(fit_logistic))
-kable(estimation_results_df, digits = 5,
+
+kable(estimation_results_df[estimation_results_df$p.value <= 0.05,], digits = 5,
       col.names = c("variable", "estimate", "se", "z-statistic", "p-value"))
 
 validation_predict_df = predict(fit_logistic, validation_df[,c(-1, -2)], type = "response")
 
 mean(validation_predict_df)
-
-pv = mean(validation_df$churn)
-
-pe = mean(estimation_df$churn)
-
 ```
 
 Use the help function, `?kable`, to learn more about the options.
@@ -185,6 +178,7 @@ Note: *Never use over-sampling to create the validation sample*, otherwise the o
 
 offset = (log(pe) - log(1-pe)) - (log(pv) - log(1-pv))
 
+print(offset)
 ```
 
 
@@ -201,6 +195,7 @@ $$\mathtt{offset\_var} = \left(\log(\bar{p}_{e})-\log(1-\bar{p}_{e})\right) -   
 
 offset_var = (log(pe) - log(1-pe)) - (log(pv) - log(1-pv))
 
+print(offset_var)
 ```
 
 (2) Add the offset as a new column to the estimation sample. Then estimate the logistic regression model.
@@ -214,7 +209,7 @@ estimation_df$offset_var = offset_var
 fit_logistic = estimation_df[,c(-1, -2)] %>% 
                 glm(churn ~ . + offset(offset_var), data = ., family = "binomial")
     
-
+summary(fit_logistic)
 ```
     
     *Where* you place `offset()` on the right-hand side of the formula is irrelevant.
@@ -309,8 +304,8 @@ compare_score = compare %>%
   summarize(ob_churn = mean(churn),
             pr_churn = mean(predict),
             lift = 100*ob_churn/pv)
-
  
+compare_score
 ```    
 
 (4) Provide a graph that displays score-level mean observed churn on the y-axis and the customer `score` on the x-axis.
@@ -320,7 +315,7 @@ compare_score = compare %>%
 library("ggplot2")
 
 compare_score %>% 
-ggplot(aes(x = score, y = ob_churn), data = .) + geom_col(fill = "lightblue") + theme_bw()
+ggplot(aes(x = score, y = ob_churn), data = .) + geom_point() + geom_line() + theme_bw()
 
 ```
 
@@ -329,14 +324,13 @@ ggplot(aes(x = score, y = ob_churn), data = .) + geom_col(fill = "lightblue") + 
 ```{r}
 
 compare_score %>% 
-ggplot(aes(x = score, y = lift), data = .) + geom_col(fill = "lightblue") + theme_bw()
+ggplot(aes(x = score, y = lift), data = .) + geom_point() + geom_line() + theme_bw()
 
 ```
 
 (6) Display the data in (4) and (5) in the form of a table.
 
 ```{r}
-
 compare_score[-3]
 ```
 
@@ -380,6 +374,8 @@ fit_linear_prob = estimation_df[,c(-1, -2, -70)] %>%
 
 linear_prob_results_df = as.data.frame(tidy(fit_linear_prob))
 write_csv(linear_prob_results_df, path = "Assign6_export.csv")
+
+
 ```
 
 Now proceed in Excel, using both the `Cell2Cell-Database-Documentation.xlsx` file and the estimation results files.
@@ -499,9 +495,10 @@ d1 = x[, 32]
 d2 = x[, 36]
 #retcall
 d3 = x[, 66]
+
 x = x[, c(-32, -36, -66)]
 
-#double lasso
+#double lasso for creditaa
 
 treat1 <- gamlr(x,d1,lambda.min.ratio=1e-4, family = "binomial")
 
@@ -518,6 +515,8 @@ causal1 <- gamlr(cBind(d1,d1hat,x),y,free=2,lmr=1e-4, , family = "binomial")
 coef(causal1)["d1",]
 #which is not 0, so creditaa is causal
 
+#double lasso for refurb
+
 treat2 <- gamlr(x,d2,lambda.min.ratio=1e-4, family = "binomial")
 
 plot(treat2)
@@ -533,9 +532,11 @@ causal2 <- gamlr(cBind(d2,d2hat,x),y,free=2,lmr=1e-4, , family = "binomial")
 coef(causal2)["d2",]
 #which is not 0, so refurb is causal
 
+#double lasso for retcall
+
 treat3 <- gamlr(x,d3,lambda.min.ratio=1e-4, family = "binomial")
 
-plot(treat3)
+#plot(treat3)
 
 d3hat <- predict(treat3, x, type="response") 
 
