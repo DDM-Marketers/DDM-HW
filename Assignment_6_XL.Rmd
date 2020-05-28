@@ -191,9 +191,9 @@ Note: *Never use over-sampling to create the validation sample*, otherwise the o
 $$\mathtt{offset\_var} = \left(\log(\bar{p}_{e})-\log(1-\bar{p}_{e})\right) -      \left(\log(\bar{p}_{v})-\log(1-\bar{p}_{v})\right)$$
 
 ```{r}
-pe = cell2cell_df_summary$churn_rate[1]
-pv = cell2cell_df_summary$churn_rate[2]
-offset_var = -(log(pe)-log(1-pe))-(log(pv)-log(1-pv))
+pv = cell2cell_df_summary$churn_rate[1]
+pe = cell2cell_df_summary$churn_rate[2]
+offset_var = (log(pe)-log(1-pe))-(log(pv)-log(1-pv))
 training_df$offset_var = offset_var
 ```
 (2) Add the offset as a new column to the estimation sample. Then estimate the logistic regression model.

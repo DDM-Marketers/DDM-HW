@@ -11,7 +11,7 @@ graphics: yes
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, comment = NA, message = FALSE, eval = FALSE,
+knitr::opts_chunk$set(echo = TRUE, comment = NA, message = FALSE, eval = TRUE,
                       fig.width = 4.5, fig.height = 3.6, fig.align = "right")
 ```
 
@@ -32,6 +32,15 @@ Address these key issues:
 2. What factors drive customer churn? Which factors are particularly important?
 
 3. What incentives should Cell2Cell offer to prevent customer churn?
+
+```{r, include = TRUE}
+    library(ggplot2)
+    library(tidyverse)
+    library(dplyr)
+    library(tidyr)
+    library(lfe)
+    load('Cell2Cell.RData')
+```
 
 \newpage
 
@@ -244,10 +253,7 @@ validation_df$offset_var = 0
     
 validation_predict_df = predict(fit_logistic, validation_df[,c(-1, -2)], type = "response")
 
-mean(validation_predict_df)
-
-pv
-
+c(churn_rate = pv, churn_rate_pred = mean(validation_predict_df), error_rate = (mean(validation_predict_df)-pv)/pv)
 ```
 
 \newpage
@@ -515,7 +521,7 @@ cor(d1hat, d1)^2
 
 causal1 <- gamlr(cBind(d1,d1hat,x),y,free=2,lmr=1e-4, , family = "binomial")
 
-coef(causal1)["d1",]
+#coef(causal1)["d1",]
 #which is not 0, so creditaa is causal
 
 treat2 <- gamlr(x,d2,lambda.min.ratio=1e-4, family = "binomial")
@@ -530,7 +536,7 @@ cor(d2hat, d2)^2
 
 causal2 <- gamlr(cBind(d2,d2hat,x),y,free=2,lmr=1e-4, , family = "binomial")
 
-coef(causal2)["d2",]
+#coef(causal2)["d2",]
 #which is not 0, so refurb is causal
 
 treat3 <- gamlr(x,d3,lambda.min.ratio=1e-4, family = "binomial")
@@ -546,7 +552,7 @@ cor(d3hat, d3)^2
 
 causal3 <- gamlr(cBind(d3,d3hat,x),y,free=2,lmr=1e-4, , family = "binomial")
 
-coef(causal3)["d3",]
+#coef(causal3)["d3",]
 #it is 0, so retcall is not causal
 
 coef(treat3)
@@ -572,9 +578,24 @@ Using the effect size table that you constructed in the previous section, identi
 
 1. Is customer churn at Cell2Cell predictable from the customer information that Cell2Cell maintains?
 
+Customer churn at Cell2Cell is predictable but not accurate from the customer information that Cell2Cell maintains. The churn rate is predicted with an error rate of 0.7%, relatively accurate. However, the false negative rate is high, where the model predicts low churn probability for positive churns (churn = 1). The false positive rate is low numerically, but is high comparing to the churn rate. The model would be of low sensitivity (true positive rate) and high specificity, while the high specificity is from the high base non-churn rate not the model accuracy.
+
+The model can be used to roughly test the factor importance but not to predict exact customers' churn probability. Better model techniques are needed with variable selections to predict the churns.
+
+\medskip
+
 2. What factors drive customer churn? Which factors are particularly important?
+
+From the change probability ranking, the top five factors are 'retcall', 'creditaa', 'eqpdays', 'refurbs' and 'months', excluding the ones with low t values (greater than -2 and smaller than 2). The variable importance are also tested and the top three are 'retcall', 'creditaa' and 'refurbs' (per results and plots from section 6.2).
+
+The causality is tested for each of them by double lasso. The factors 'creditaa' and 'refurbs' are causal. The factor 'retcall' is not causal, but highly correlated to 'retcalls'. Variable selection is needed to further improve the model.
+
+\medskip
 
 3. What incentives should Cell2Cell offer to prevent customer churn?
 
+Cell2Cell need to offer customers more promotions proactively to prevent them from thinking to churn. Once they start to think of churning to call to the retention team, they are much more likely to churn. When they call, Cell2Cell need to offer more promotions, discounts or extra benefits to prevent them from churning.
+
+Customer segmentation is needed to specifity more targeted strategies to different customers. For high credit rating customers, they are much less likely to churn than normal credit rating customers (change_prob(creditaa) ranking second). Cell2Cell needs to offer more promotions or benefits to the lower credit rating customers than higher. Same for customers buying refurbished devices, longer warranties and discounts would be beneficial to prevent them from churning.
 
 
