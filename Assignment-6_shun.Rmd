@@ -211,19 +211,16 @@ ggplot(aes(x = score, y = lift), data = .) + geom_point() + geom_line() + theme_
 compare_score[-3]
 ```
 
-\medskip
-
-
-The results provide evidence for the validity of the model. Because the lift factors have an upward trend, rather than a horizontal line at 100. That means our model can effectively predict the different churn probabilities for different customers. 
-But the model also has limitations because we found that when the customer did churn, our model is not very accurate in predicting churn = 1, but it performed better in predicting customers who didn't churn. 
-
 ```{r}
 
 compare %>% 
 ggplot(aes(x = churn, y = predict, group = churn, color = churn), data = .) + geom_boxplot( )
 
 ```
+\medskip
 
+The results provide evidence for the validity of the model. Because the lift factors have an upward trend, rather than a horizontal line at 100. That means our model can effectively predict the different churn probabilities for different customers. 
+But the model also has limitations because we found that when the customer did churn, our model is not very accurate in predicting churn = 1, but it performed better in predicting customers who didn't churn. 
 \newpage
 
 
@@ -244,33 +241,21 @@ write_csv(linear_prob_results_df, path = "Assign6_export.csv")
 
 ```
 
-Now proceed in Excel, using both the `Cell2Cell-Database-Documentation.xlsx` file and the estimation results files.
-
 \medskip
 
 
 ## Automated approach to construct effect size table
 
-Run all four code chunks below.
-
-For the code to work ensure that:
-
-(i) Your main data frame, `cell2cell_df`, is in memory, and you have removed all rows with missing values.
+We will remove missing values in the data frame and check the objects `p_e` and `p_v` that contain the mean observed churn rates in the estimation and validation samples are in memory.
 
 ```{r}
 cell2cell_df = na.omit(cell2cell_df)
 ```
 
-(ii) Either the estimation results object from the linear probability model is called `fit_linear_prob`, or you modify the object name in the third code chunk below.
-
-(iii) The objects `p_e` and `p_v` that contain the mean observed churn rates in the estimation and validation samples are in memory.
-
 ```{r}
 p_e = pe
 p_v = pv
 ```
-
-If these conditions are met, the code below will work.
 
 \newpage
 
@@ -328,9 +313,7 @@ write_csv(effect_sizes_df, path = "Assign6_export2.csv")
 
 \medskip
 
-**Interpretation of the `change_prob` variable**: For a dummy variable, `change_prob` is the change in the churn probability associated with an increase in the dummy value from 0 to 1. For all other variables, `change_prob` is the change in the churn probability associated with an increse in the value of the variable by one standard deviation.
 
-`change_prob` is defined on the scale from 0 to 100. I.e., if `change_prob` takes the value 0.6, the effect size is a change in the churn probability by 0.6%, not by 60%!
 
 ```{r}
 library(gamlr)
@@ -429,6 +412,8 @@ coef(treat3)
 # Develop incentives to prevent churn
 
 Using the effect size table that you constructed in the previous section, identify some factors that are strongly associated with churn. If actionable, propose an incentive that can be targeted to the customers to prevent churn.
+
+From the effect size table, the following variables are strongly associated with churn: 'retcall', 'creditaa', 'eqpdays', 'refurbs' and 'months'. To target customers that have made a call to retention team, we can offer pricing discounts to keep within our wireless network. To target customers with refurbished handset, we can offer extended warranty to improve their customer experience. To target customers with lower credit ratings, we can offer them extended payment terms to help them meet the payment deadline. 
 
 \newpage
 
