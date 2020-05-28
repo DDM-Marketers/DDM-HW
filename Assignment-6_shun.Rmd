@@ -1,7 +1,7 @@
 ---
 title: "Assignment 6: Churn Management"
-author: "Günter J. Hitsch"
-date: "May 22, 2020"
+author: "Group 11: Christina Wang, Kailin Fu, Shun Guan, Sylvia Lu, Yiran Huang"
+date: "May 28, 2020"
 output:
   pdf_document:
     number_sections: yes
