@@ -1,7 +1,7 @@
 ---
 title: "Assignment 6: Churn Management"
-author: "Günter J. Hitsch"
-date: "May 22, 2020"
+author: "Group 11: Christina Wang, Kailin Fu, Shun Guan, Sylvia Lu, Yiran Huang"
+date: "May 28, 2020"
 output:
   pdf_document:
     number_sections: yes
@@ -11,7 +11,7 @@ graphics: yes
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, comment = NA, message = FALSE, eval = FALSE,
+knitr::opts_chunk$set(echo = TRUE, comment = NA, message = FALSE, eval = TRUE,
                       fig.width = 4.5, fig.height = 3.6, fig.align = "right")
 ```
 
@@ -33,6 +33,15 @@ Address these key issues:
 
 3. What incentives should Cell2Cell offer to prevent customer churn?
 
+```{r, include = TRUE}
+    library(ggplot2)
+    library(tidyverse)
+    library(dplyr)
+    library(tidyr)
+    library(lfe)
+    load('Cell2Cell.RData')
+```
+
 \newpage
 
 
@@ -40,31 +49,9 @@ Address these key issues:
 
 # Data
 
-All data are contained in the file `Cell2Cell.RData`. Please consult the file `Cell2Cell-Database-Documentation.xlsx` for a description of the data and some summary statistics.
-
-Note that *calibration sample* is an alternative term for *training* or *estimation* sample. Hence, the variable `calibrat` indicates if a customer belongs to the training (estimation) sample or to the validation sample.
-
-Inspect the data.
-
-Some variables have missing values, which is common and of no concern (unless the missing values indicate some *systematic* flaws or bias in how the data were constructed). Most estimation methods in R will automatically delete rows with missing values before estimating the model. However, the `predict` methods will yield `NA` values if a row in the data used for prediction contains missing values. Hence, in a situation where you don't need to keep the full data I recommend to remove any observations with missing values before you conduct the main analysis.
-
-Recall from the *Introduction to Data Science in R* guide that you can drop all rows in a data frame that contain missing values using the `na.omit()` function.
-
-\vskip 0.25in
-
-
 **Oversampling**
 
-One important aspect of the data that is that the calibration sample was selected using *oversampling*. Oversampling is a technique to choose a calibration sample such that the values of the outcome (dependent) variable are balanced. In particular, the outcome in one half of the observations takes the value 0 (customer did not churn), and the other half takes the value 1 (the customer churned).
-
-The purpose of oversampling is to obtain more precise estimates (lower standard errors) when estimating a logistic regression model. However, oversampling also results in biased predictions, in our example predicted churn probabilities that are larger than the true churn probabilities. How to correct for this bias is explained further below.
-
-The validation sample, on the other hand, *was not created using oversampling* and represents the *true churn rate* in the data.
-
-\bigskip
-
-
-Verify that approximately 50% of observations in the training sample take the value 1, and contrast this number with the *true churn rate*, i.e. the average rate or probability at which customers churn, in the validation sample.
+The calibration sample was selected using oversampling, however the validation sample was not created using oversampling and represents the true churn rate in the date. This section we will compare and contrast the churn Rate in the training sample and validation sample. 
 
 ```{r}
 library(tidyverse)
@@ -81,7 +68,7 @@ print(pv)
 
 print(pe)
 ```
-The churn rate in the training sample is 49.8%, close to 50%, but the true churn rate in the validation sample is much lower, at 1.93%.
+The churn rate in the training sample is 49.8%, close to 50%, but the true churn rate in the validation sample is much lower, at 1.93%. This verifies that approximately 50% of observations in the training sample take the value 1, contrasted with the true churn rate in the valiation sample. 
 \newpage
 
 
@@ -89,18 +76,7 @@ The churn rate in the training sample is 49.8%, close to 50%, but the true churn
 
 # Model estimation
 
-Estimate a logit model to predict the conditional (on the customer attributes) churn probability.
-
-- Make sure that you estimate the model using the calibration = estimation/training sample only, where `calibrat` takes the value 1. One straightforward way of achieving this is to create two new data frames, `estimation_df` and `validation_df`, from the original data.
-
-- Obviously, `customer` and `calibrat` should not be included as independent variables in the logistic regression.
-
-\medskip
-
-
-You can display the regression output using `summary`. However, especially when you have a large number of independent variables in the model, it is often convenient to store the regression estimates in a table (data frame).
-
-A simple way to do this is to install the `broom` and `kable` packages. The `tidy` function in the `broom` package converts the regression output (here, the object `fit`) into a data frame. Furthermore, the `kable` function creates a nicely formatted table.
+In this section, we will develop a logistic regression model to predict the conditional (on the customer attributes) churn probability. The model uses the traning sample only and excluded `customer` and `calibrat` as independent variables. 
 
 ```{r}
 library(broom)
@@ -119,92 +95,30 @@ validation_predict_df = predict(fit_logistic, validation_df[,c(-1, -2)], type = 
 mean(validation_predict_df)
 ```
 
-Use the help function, `?kable`, to learn more about the options.
-
 \medskip
 
-Skimming the estimation results, is there evidence that the independent variables may be able to predict differences in churn rates across customers?
-
-\medskip
-
-
-Next, predict (`predict`) the churn rates (probabilities) in the validation sample.
-
-Calculate the mean of the predicted churn rates and verify that this mean reflects the average observed churn rate in the estimation sample, not the mean of the observed churn in the validation sample.
-
-Recall that the validation sample was chosen without oversampling and indicates the *true churn rate* in the data. Hence, we need to account for the upward bias in the predicted churn probabilities due to oversampling in the estimation sample. How to do this is explained in the next section.
-
-The following independent variables are significant with 95% confidence. 
+The churn rate predicted in the validation sample is 0.4772. The above table of independent variables are significant with 95% confidence. 
 
 
 \newpage
-
 
 
 
 # Model estimation and prediction: Accounting for oversampling
 
-## Explanation
+(1) Create the offset variable
 
-**Note**: Fully understanding this explanation is not very important, and you can simply skim the section.
-
-\smallskip
-
-The idea of oversampling is as follows. If the response rate in the data is small, there is a strong imbalance between observations with a response of $Y=1$ and a response of $Y=0$. As a consequence, estimating the model is difficult and the estimates will be imprecise, i.e. they will have large standard errors.
-
-The solution: Create a training sample with one half of observations randomly chosen from the original data with response $Y=1$, and the other half randomly chosen from the original data with response $Y=0$. Now estimation is easier and the standard errors will be smaller.
-
-However, when applied to logistic regression, oversampling will result in a biased estimate of the intercept (constant) term, although all other estimates will be unbiased.^[To be technically correct, the other estimates will be *inconsistent*.] Hence, if we do not de-bias (adjust) the intercept, the predicted probabilities will be too large, reflecting the artificial response rate of $\frac{1}{2}$ in the over-sampled training data. 
-
-In order to de-bias the scale of the predicted response (in this example: churn) in the validation sample we need to supply an *offset variable* to the logistic regression model. An offset is a known number that is added to the right-hand side of the regression when estimating the model, and adding the offset will correspondingly change the estimate of the intercept. The offset takes the form:
-$$\text{offset}=\left(\log(\bar{p}_{e})-\log(1-\bar{p}_{e})\right) - \left(\log(\bar{p}_{v})-\log(1-\bar{p}_{v})\right)$$
-
-Here, $\bar{p}_{e}$ is the average response rate in the estimation sample and $\bar{p}_{v}$ is the average response rate in the validation sample.
-
-Then, when we predict the response rate in the validation sample, we set the offset variable to 0.
-
-Why does this work? --- Conceptually, logistic regression is a regression model for the log-odds of the response (outcome) probability,
-$$\log \left(\frac{p}{1-p}\right) = \log(p) - \log(1-p) = \beta_0 + \beta_1 X_1 + \beta_2 X_1 + \dots $$
-
-When we add the offset variable to the right hand side of the regression model the estimation algorithm will "incorporate" the offset in the intercept, $\beta_0$. The effect of setting the offset to 0 is equivalent to subtracting the offset from the intercept. Subtracting the offset amounts to:
-
-(i) Subtracting $\log(\bar{p}_{e})-\log(1-\bar{p}_{e})$, the log-odds of the artificial response rate in the estimation sample, and
-
-(ii) Adding $\log(\bar{p}_{v})-\log(1-\bar{p}_{v})$, the log-odds in the validation sample that reflects the true log-odds in the data.
-
-This process de-biases the predicted response, i.e. restores the correct response level.
-
-Note: *Never use over-sampling to create the validation sample*, otherwise the offset variable approach will not work.
-
-```{r}
-
-offset = (log(pe) - log(1-pe)) - (log(pv) - log(1-pv))
-
-print(offset)
-```
-
-
-\newpage
-
-
-## Implementation
-
-(1) To create the offset variable, `offset_var`, compute the mean observed churn rates in the estimation and training samples, $\bar{p}_{e}$ and $\bar{p}_{v}$.
-
-    Then calculate the offset using the formula
-$$\mathtt{offset\_var} = \left(\log(\bar{p}_{e})-\log(1-\bar{p}_{e})\right) -      \left(\log(\bar{p}_{v})-\log(1-\bar{p}_{v})\right)$$
 ```{r}
 
 offset_var = (log(pe) - log(1-pe)) - (log(pv) - log(1-pv))
 
 print(offset_var)
 ```
-The offset variable is 3.920892
-(2) Add the offset as a new column to the estimation sample. Then estimate the logistic regression model.
+The offset variable is 3.920892.
 
-    To tell `glm` that you want to use `offset_var` you need to use a formula of the form:
+(2) Add the offset as a new column to the estimation sample and estimate the logistic regression model.
 
-    ```{r}
+```{r}
     
 estimation_df$offset_var = offset_var   
     
@@ -214,26 +128,7 @@ fit_logistic = estimation_df[,c(-1, -2)] %>%
 summary(fit_logistic)
 ```
     
-    *Where* you place `offset()` on the right-hand side of the formula is irrelevant.
-    
-    For example, if you use all variables in your data (except `y` and `offset_var`) as independent variables:
-    
-    ```{r, eval = FALSE}
-glm(y ~ . + offset(offset_var), ...)
-```
-
-(3) Set the offset variable `offset_var` to 0 and add it to the validation sample. This is simple: In the validation sample, create a column that has the same name as the offset variable column in the estimation sample, and make sure this column takes values `= 0`.
-
-    Then predict the churn rates in the validation sample.
-    
-    *Note*: When predicting the churn rates you will likely see the warning message, *prediction from a rank-deficient fit may be misleading*. Simply ignore. To suppress the warning message, add `warning = FALSE` to the code chunk header, i.e. `{r, warning = FALSE}`.
-
-
-
-\medskip
-
-
-Calculate the mean of the predicted churn rates and verify that this mean reflects the observed average churn rate in the validation sample.
+(3) Set the offset variable `offset_var` to 0 and add it to the validation sample. Then calculate the predicted churn rates after de-biasing. 
 
 ```{r, warning = FALSE}
 
@@ -241,11 +136,9 @@ validation_df$offset_var = 0
     
 validation_predict_df = predict(fit_logistic, validation_df[,c(-1, -2)], type = "response")
 
-mean(validation_predict_df)
-
-pv
-
+c(churn_rate = pv, churn_rate_pred = mean(validation_predict_df), error_rate = (mean(validation_predict_df)-pv)/pv)
 ```
+The mean of the predicted churn rates is 0.0194, which is very close to the observed average churn rate in the validation sample (0.0193). 
 
 \newpage
 
@@ -254,12 +147,7 @@ pv
 
 # Model validation
 
-Provide evidence for the validity of the model using a lift table and a lift chart.
-
-**Note**: All model validation steps are need to be performed in the validation sample.
-
-
-(1) Create a table that contains both the observed `churn` and the predicted churn rate (probability) from the logistic regression model that you estimated in the previous section. You can simply add the predicted churn rate as a new column to the validation sample data frame.
+(1) Create a table that contains both the observed `churn` and the predicted churn rate (probability) from the logistic regression model.
 
 ```{r}
 
@@ -274,11 +162,7 @@ names(compare)[2] <- "predict"
 
 ```
 
-(2) Add a column, `score`, that assigns a number from 1 to 10 to each customer based on the predicted churn rate. Use the `cut_number` function that is part of the `tidyverse` (to be precise, the function is in the `ggplot2` package):
-
-    > `score = cut_number(Pr_churn, n = 10, labels = FALSE)`
-    
-    `cut_number` creates `n` equally sized groups, where group 1 represents customers with the lowest predicted churn rates and `n` (here: `n = 10`) represents customers with the highest predicted churn rates.
+(2) Add a column, `score`, that assigns a number from 1 to 10 to each customer based on the predicted churn rate. 
 
 ```{r}
 
@@ -288,16 +172,7 @@ head(compare)
 
 ```
 
-(3) Create a summary table that, for each of the scores, contains:
-
-    (i) Mean predicted churn rate
-    (ii) Mean observed churn rate
-    (iii) Lift factor
-    
-    Recall the definition of the lift:
-$$\text{lift in segment }k = 100\cdot\frac{\text{churn rate in segment }k}{\text{average churn rate across all customers}}$$
-
-    Hint: Create the summary table using `group_by` and `summarize`.
+(3) Create a summary table that for each of the scores, containing mean predicted churn rate, mean observed churn rate, and lift factor. 
     
 ```{r}    
 
@@ -321,7 +196,7 @@ ggplot(aes(x = score, y = ob_churn), data = .) + geom_point() + geom_line() + th
 
 ```
 
-(5) Similarly, provide a lift chart (graph).
+(5) Provide a lift chart (graph).
 
 ```{r}
 
@@ -336,19 +211,16 @@ ggplot(aes(x = score, y = lift), data = .) + geom_point() + geom_line() + theme_
 compare_score[-3]
 ```
 
-\medskip
-
-Discuss the results. Do the results provide evidence for the validity of the model?
-The results provide evidence for the validity of the model. Because the lift factors have an upward trend, rather than a horizontal line at 100. That means our model can effectively predict the different churn probabilities for different customers. 
-But the model also has limitations because we found that when the customer did churn, our model is not very accurate in predicting churn = 1, but it performed better in predicting customers who didn't churn. 
-
 ```{r}
 
 compare %>% 
 ggplot(aes(x = churn, y = predict, group = churn, color = churn), data = .) + geom_boxplot( )
 
 ```
+\medskip
 
+The results provide evidence for the validity of the model. Because the lift factors have an upward trend, rather than a horizontal line at 100. That means our model can effectively predict the different churn probabilities for different customers. 
+But the model also has limitations because we found that when the customer did churn, our model is not very accurate in predicting churn = 1, but it performed better in predicting customers who didn't churn. 
 \newpage
 
 
@@ -356,20 +228,7 @@ ggplot(aes(x = churn, y = predict, group = churn, color = churn), data = .) + ge
 
 # Effect sizes: Why do customers churn?
 
-We would like to understand *why* customers churn, which can help us to propose incentives to prevent customer churn. Hence, we now construct a table that contains comparable effect sizes (changes in the churn probability) for all independent variables, as we discussed in class.
-
-Because logistic regression coefficients are not directly interpretable, we first need to estimate a linear probability model that predicts customer churn.
-
-Note: Do *not* use an offset variable when estimating the linear probability model!
-
-Once you have estimated the model, you can construct the effect size table in Excel, or you can use the code below to construct the table in an automated fashion
-
-\medskip
-
-
-## Construct effect size table in Excel
-
-Assuming your linear probability model output is called `fit_linear_prob`, you can convert the estimation results into a data frame and then save the estimation results as a csv file:
+In this section we will convert the estimation results into a data frame and then save the estimation results as a csv file:
 
 ```{r}
 
@@ -382,33 +241,21 @@ write_csv(linear_prob_results_df, path = "Assign6_export.csv")
 
 ```
 
-Now proceed in Excel, using both the `Cell2Cell-Database-Documentation.xlsx` file and the estimation results files.
-
 \medskip
 
 
 ## Automated approach to construct effect size table
 
-Run all four code chunks below.
-
-For the code to work ensure that:
-
-(i) Your main data frame, `cell2cell_df`, is in memory, and you have removed all rows with missing values.
+We will remove missing values in the data frame and check the objects `p_e` and `p_v` that contain the mean observed churn rates in the estimation and validation samples are in memory.
 
 ```{r}
 cell2cell_df = na.omit(cell2cell_df)
 ```
 
-(ii) Either the estimation results object from the linear probability model is called `fit_linear_prob`, or you modify the object name in the third code chunk below.
-
-(iii) The objects `p_e` and `p_v` that contain the mean observed churn rates in the estimation and validation samples are in memory.
-
 ```{r}
 p_e = pe
 p_v = pv
 ```
-
-If these conditions are met, the code below will work.
 
 \newpage
 
@@ -466,9 +313,7 @@ write_csv(effect_sizes_df, path = "Assign6_export2.csv")
 
 \medskip
 
-**Interpretation of the `change_prob` variable**: For a dummy variable, `change_prob` is the change in the churn probability associated with an increase in the dummy value from 0 to 1. For all other variables, `change_prob` is the change in the churn probability associated with an increse in the value of the variable by one standard deviation.
 
-`change_prob` is defined on the scale from 0 to 100. I.e., if `change_prob` takes the value 0.6, the effect size is a change in the churn probability by 0.6%, not by 60%!
 
 ```{r}
 library(gamlr)
@@ -516,7 +361,7 @@ cor(d1hat, d1)^2
 
 causal1 <- gamlr(cBind(d1,d1hat,x),y,free=2,lmr=1e-4, , family = "binomial")
 
-coef(causal1)["d1",]
+#coef(causal1)["d1",]
 #which is not 0, so creditaa is causal
 
 #double lasso for refurb
@@ -533,7 +378,7 @@ cor(d2hat, d2)^2
 
 causal2 <- gamlr(cBind(d2,d2hat,x),y,free=2,lmr=1e-4, , family = "binomial")
 
-coef(causal2)["d2",]
+#coef(causal2)["d2",]
 #which is not 0, so refurb is causal
 
 #double lasso for retcall
@@ -551,7 +396,7 @@ cor(d3hat, d3)^2
 
 causal3 <- gamlr(cBind(d3,d3hat,x),y,free=2,lmr=1e-4, , family = "binomial")
 
-coef(causal3)["d3",]
+#coef(causal3)["d3",]
 #it is 0, so retcall is not causal
 
 coef(treat3)
@@ -568,6 +413,8 @@ coef(treat3)
 
 Using the effect size table that you constructed in the previous section, identify some factors that are strongly associated with churn. If actionable, propose an incentive that can be targeted to the customers to prevent churn.
 
+From the effect size table, the following variables are strongly associated with churn: 'retcall', 'creditaa', 'eqpdays', 'refurbs' and 'months'. To target customers that have made a call to retention team, we can offer pricing discounts to keep within our wireless network. To target customers with refurbished handset, we can offer extended warranty to improve their customer experience. To target customers with lower credit ratings, we can offer them extended payment terms to help them meet the payment deadline. 
+
 \newpage
 
 
@@ -577,9 +424,24 @@ Using the effect size table that you constructed in the previous section, identi
 
 1. Is customer churn at Cell2Cell predictable from the customer information that Cell2Cell maintains?
 
+Customer churn at Cell2Cell is predictable but not accurate from the customer information that Cell2Cell maintains. The churn rate is predicted with an error rate of 0.7%, relatively accurate. However, the false negative rate is high, where the model predicts low churn probability for positive churns (churn = 1). The false positive rate is low numerically, but is high comparing to the churn rate. The model would be of low sensitivity (true positive rate) and high specificity, while the high specificity is from the high base non-churn rate not the model accuracy.
+
+The model can be used to roughly test the factor importance but not to predict exact customers' churn probability. Better model techniques are needed with variable selections to predict the churns.
+
+\medskip
+
 2. What factors drive customer churn? Which factors are particularly important?
+
+From the change probability ranking, the top five factors are 'retcall', 'creditaa', 'eqpdays', 'refurbs' and 'months', excluding the ones with low t values (greater than -2 and smaller than 2). The variable importance are also tested using LASSO and the top three are 'retcall', 'creditaa' and 'refurbs' (per results and plots from section 6.2).
+
+The causality is tested for each of them by double LASSO. The factors 'creditaa' and 'refurbs' are causal. The factor 'retcall' is not causal, but highly correlated to 'retcalls'. Variable selection is needed to further improve the model.
+
+\medskip
 
 3. What incentives should Cell2Cell offer to prevent customer churn?
 
+Cell2Cell need to offer customers more promotions proactively to prevent them from thinking to churn. Once they start to think of churning to call to the retention team, they are much more likely to churn. When they call, Cell2Cell need to offer more promotions, discounts or extra benefits to prevent them from churning.
+
+Customer segmentation is needed to specifity more targeted strategies to different customers. For high credit rating customers, they are less likely to churn than normal credit rating customers (change_prob(creditaa) ranking second). Cell2Cell needs to offer more promotions or benefits to the lower credit rating customers than higher. Same for customers buying refurbished devices, longer warranties and discounts would be beneficial to prevent them from churning.
 
 
