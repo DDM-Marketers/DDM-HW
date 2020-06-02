@@ -99,6 +99,7 @@ Now estimate a regression model to predict the spending level (`spend`) given al
 
 train_df = crm_df %>% 
    filter(validation_sample == 0) %>% 
+   filter(target == 1) %>% 
    select(x_1:spend)
 
 fit_lm = lm(spend ~ ., data = train_df)
@@ -129,25 +130,30 @@ Provide evidence for the validity of the model.
     > `predicted_spend = predict(fit, newdata = <data set or placeholder>)`
 ```{r}
 
-#valid_df = crm_df %>%  
-#   filter(validation_sample == 1) %>%
-#   filter(target == 1)
-
 valid_df = crm_df %>%  
    filter(validation_sample == 1)
 
+#valid_df = crm_df %>%  
+#   filter(validation_sample == 1) %>% 
+#   filter(target == 0)
+
+
 valid_df$predict = cut_number(predict(fit_lm, valid_df), 20, labels = FALSE)
+valid_df$value = predict(fit_lm, valid_df)
 
 head(valid_df)
 
-table(valid_df$spend > 0, valid_df$predict > 0)
+table(valid_df$spend > 0, valid_df$value > 0)
 
 summary(valid_df$spend)
+summary(valid_df$value)
 summary(valid_df$predict)
 
 hist(valid_df$spend, breaks = 100)
 
 hist(valid_df[valid_df$spend > 0,]$spend, breaks = 100)
+
+hist(valid_df[valid_df$value > 0,]$spend, breaks = 100)
 
 hist(valid_df$predict)
 
@@ -201,8 +207,6 @@ Recall how to use the `cut_number` function:
 Do the results provide evidence for the validity of the model?
 ```{r}
 #Yes
-valid_df$value = predict(fit_lm, valid_df)
-
 summ_table = valid_df %>% 
    group_by(predict) %>% 
    summarize(average_spend = mean(spend),
@@ -243,12 +247,11 @@ n_cust = length(valid_df$customer_id)
 
 n_target = length(valid_df[valid_df$value > 0, ]$customer_id)
 
-
-
-profit = margin * (sum(valid_df[valid_df$value > 0, ]$value)/n_target * 1000000) - 1000000 * cost
+profit = margin * (sum(valid_df[valid_df$value > 0, ]$value) / n_cust * 1000000) - 1000000 * cost
+#2388385 per 1 million customer
 
 n_target/n_cust
-
+#91% are targeted 
 ```
 
 \newpage
@@ -272,7 +275,7 @@ We will use the following approach:
     *Note*: The *score* that we use here is the expected customer-level targeting profit variable (call it `predicted_targeting_profit`) that we created in section 5. This variable is related to but not identical to the score variable indicating one of the customer segments in section 4 of this assignment. In particular, unlike the segment indicator in section 4, `predicted_targeting_profit` represents a non-discretized, continuous score.
 
 ```{r}
-valid_df$predicted_targeting_profit = ifelse(valid_df$value > 0, margin * valid_df$value - cost, 0)
+valid_df$predicted_targeting_profit = valid_df$value 
 
 ```
 
@@ -285,7 +288,7 @@ valid_df$target, valid_df$spend, 2/3,
 margin,
 cost)
 
-#0.38 2729.192
+#0.36 2868.904
 ```
 
 (d) To evaluate the total profit when targeting the top $n$ percent of customers we employ a **targeting policy evaluation approach using a randomized sample** (discussed in class). In particular, we choose a range of percentage values $n = 0, 0.01, 0.02, \dots, 1$, and for each of these values we calculate the corresponding targeting profit.
@@ -388,14 +391,10 @@ Note: The predicted targeting profits are expressed in $1,000 per one million cu
 
 ```{r}
 top_percent = seq(from = 0, to = 1, by = 0.01)
-
-profit_df = predict_profit_top_n(top_percent,
-                                 validation_df$predicted_targeting_profit,
-                                 validation_df$target,
-                                 validation_df$spend,
-                                 2/3,
-                                 margin,
-                                 cost)
+profit_df = predict_profit_top_n(top_percent, valid_df$predicted_targeting_profit,
+valid_df$target, valid_df$spend, 2/3,
+margin,
+cost)
 
 ggplot(data = profit_df) + geom_line(aes(x = top_percent, y = profit), col ="red")
 ```
@@ -416,7 +415,7 @@ profit_df[which.max(profit_df$profit),]
 ```
 (4) In light of your results, was the assumption that targeting profits in the absence of targeting are zero a good assumption?
 ```{r}
-#Yes, simplified the model
+#No, we will lose a lot of ranking data
 ```
 
 (5) By how much can profits be increased when targeting the top $n^*$ percent of customers relative to the baseline profit if none of the customers are targeted? Express the difference in dollars and as a percentage of the baseline profit without targeting.
