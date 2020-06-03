@@ -1,0 +1,280 @@
+---
+title: 'Assignment 7: Customer Targeting and Targeting Policy Evaluation'
+author: 'Group 11: Sylvia Lu, Christina Wang, Yiran Huang, Kailin Fu, Shun Guan'
+date: "June 3, 2020"
+output:
+  word_document:
+    toc: yes
+  pdf_document:
+    number_sections: yes
+    toc: yes
+  html_document:
+    df_print: paged
+    toc: yes
+graphics: yes
+urlcolor: blue
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, comment = NA, message = FALSE, eval = TRUE,
+                      fig.width = 8, fig.height = 5.5, out.width = "75%", fig.align = "right")
+```
+
+\setlength{\parskip}{6pt}
+\newpage
+
+# Data description
+
+Summarize some key aspects of the data. In particular:
+
+- The probability of targeting a customer in the A/B test was $2/3$. Confirm that the observed targeting rate was indeed approximately $2/3$.
+```{r overall summary}
+load("C:/Users/amber/Desktop/data-driven marketing/assignment 7/Targeting-Data.RData")
+library(dplyr)
+library(tidyr)
+library(lfe)
+library(tidyverse)
+crm_df %>%
+   summarize(n_target = sum(target),
+             n_obs = n(),
+             target_rate = n_target/n_obs)
+```
+
+**The observed target rate is 66.88%, around 2/3.**
+
+- Provide some basic summary statistics of the `spend` variable.
+```{r}
+crm_df %>%
+   summarize(
+      mean_spend = mean(spend),
+      min_spend = min(spend),
+      max_spend = max(spend),
+      sd_spend = sd(spend),
+      sum_spend = sum(spend)
+   )
+```
+
+
+- Document the probability of a purchase, and summarize and visualize the distribution of `spend` *conditional* on a purchase, i.e. given $\tt{spend} > 0$. You will see why it is more informative to separately document the purchase probability and spending conditional on a purchase compared to simply describing the overall, unconditional variation in `spend`.
+```{r}
+crm_df %>%
+   filter(spend > 0)%>%
+      summarize(
+      prob_purchase = n()/149844,
+      mean_spend = mean(spend),
+      min_spend = min(spend),
+      max_spend = max(spend),
+      sd_spend = sd(spend),
+      sum_spend = sum(spend)
+   )
+```
+
+**6.3% of total customers made a purchase. Conditioning on a purchase, the average spending is 148.9, much higher than 9.3 for overall spending per purchase. The standard deviation is 169.1 conditioning on a purchase, also higher than that for overall variation (55.4) in spending. The conditional statistics better reflect the spending pattern for customers who did make a purchase, without being diluted by those didn't purchase.**
+
+\newpage
+
+
+
+
+# Estimation (model training)
+
+First, set a seed for the random number generator and add a new column to `crm_df`, called `validation_sample`:
+
+```{r}
+set.seed(5807)
+
+crm_df = crm_df %>%
+   mutate(validation_sample = rbinom(n(), size = 1, prob = 0.5))
+```
+
+\medskip
+
+Inspect the estimated regression coefficients. Does the regression output provide any evidence that the model can predict spending, i.e. that there is a statistical association between the customer attributes and spending, conditional on being targeted?
+```{r}
+fit_lm = crm_df %>%
+   filter(validation_sample == 0, target == 1) %>%
+   lm(formula = spend ~ . -customer_id-target-validation_sample)
+summary(fit_lm)
+```
+
+**A bunch of variables are significant in the model above, indicating a statistical association between some customer attributes and spending, conditional on being targeted. **
+
+\newpage
+
+# Model validation
+
+Provide evidence for the validity of the model.
+
+(1) Use `predict` to predict expected customer-level spending, and use the `cut_number` function to assign each customer to one of 20 segments according to expected (predicted) spending. Note that in a linear regression the `predict` function does not require the `type = "response"` argument:
+
+    > `predicted_spend = predict(fit, newdata = <data set or placeholder>)`
+```{r}
+validation_df = crm_df %>%
+   filter(validation_sample == 1)
+validation_df = validation_df %>%
+   mutate(pred_spend = predict(fit_lm, newdata = validation_df),
+          score = cut_number(pred_spend, n = 20, labels = FALSE))
+```
+
+
+(2) Create a summary table that contains average spending and the lift for each of the 20 segments.
+
+```{r}
+avg_spend_overall = mean(validation_df$spend)
+compare_score = validation_df %>%
+   group_by(score) %>%
+   summarize(avg_spend = mean(spend),
+             lift = 100*avg_spend / avg_spend_overall)
+```
+    
+
+(3) Provide a graph of segment-level average spending on the y-axis and the customer score (segment) on the x-axis.
+```{r}
+ggplot(compare_score,aes(x=score,y=avg_spend))+
+  geom_line()+
+  geom_point()
+```
+
+
+(4) Provide a lift chart.
+```{r}
+ggplot(compare_score,aes(x=score,y=lift))+
+  geom_line()+
+  geom_point()
+```
+
+(5) Display the data in (3) and (4) in the form of a table.
+```{r}
+print(compare_score)
+```
+
+
+\medskip
+
+Do the results provide evidence for the validity of the model?
+
+**There is a positive trend in the lift chart, however it is not linear. The line is pretty flat for scores lower than 15 and grows dramatically for the score range 15-20. This might indicates that our model is good at distinguishing customers with extremely high purchase potential, but not so efficient in segmenting the customers with lower purchase amount.**
+
+\newpage
+
+
+
+# Profit evaluation: Traditional approach
+
+Use the percent margin and targeting cost data below to predict the expected profit level (given that the customer is targeted) for each customer based on the expected (predicted) spending level.
+```{r}
+margin = 0.34          # Percent
+cost   = 1.12          # Dollars
+```
+
+\medskip
+
+Evaluate the **total expected profit** if all customers with positive expected profit levels are targeted. The maintained assumption is that profits from customers who are not targeted are zero. To make the total profit number more easily interpretable, scale it to a customer base of one million (divide the total profit by the number of customers in the validation sample and multiply by one million).
+
+```{r}
+validation_df$exp_profit = validation_df$pred_spend*margin-cost
+
+n_val_total = nrow(validation_df)
+
+validation_df %>%
+   filter(exp_profit>0)%>%
+   summarize(total_exp_profit = sum(exp_profit),
+             scaled_profit = total_exp_profit / n_val_total*1000000,
+             percent = n()/n_val_total
+             )
+```
+
+**The total profit scaled to a customer base of 1 million is 2,691,936.**
+
+What percentage of all customers should be targeted according to the expected profit level?
+
+**61.7% of all validation customers should be targeted according to the expected profit level.**
+
+
+\newpage
+
+# Profit evaluation using a randomized sample
+
+If baseline sales without targeting are not zero, how do we correctly evaluate the total targeting profit?
+
+To evaluate the total profit when targeting the top $n$ percent of customers, we use the function  **`predict_profit_top_n`**:
+
+\medskip
+
+```{r,include = FALSE}
+predict_profit_top_n <- function(top_percent, score, W, spend, treatment_Pr, margin, cost) {
+
+   # Observed profits for treated and untreated units
+   profit_0 = margin*spend
+   profit_1 = margin*spend - cost
+
+   # Observation-level inverse probability-weighted profit components by targeting status
+   profit_component_0 = ((1 - W)/(1 - treatment_Pr))*profit_0
+   profit_component_1 = (W/treatment_Pr)*profit_1
+
+   # Output table
+   K = length(top_percent)
+   profits_df = data.frame(
+      top_percent = top_percent,
+      profit      = 0
+   )
+   
+   # Profit scale factor ($1,000 per 1 million customers)
+   scale_factor = 1000/length(W)
+   
+   for (k in 1:K) {
+      if (top_percent[k] < 1e-12) {
+         threshold = Inf
+      } else if (top_percent[k] > 1 - 1e-12) {
+         threshold = -Inf
+      } else {
+         threshold = quantile(score, probs = 1 - top_percent[k])
+      }
+      
+      target = as.numeric(score >= threshold)
+      profits_df$profit[k] = scale_factor*sum((1 - target)*profit_component_0 + 
+                                                   target *profit_component_1)
+   }
+
+   return(profits_df)
+}
+```
+
+\newpage
+
+\medskip
+
+(1) Evaluate the targeting profits over a range of $n = 0, 0.01, 0.02, \dots, 1$. Examine the results, and plot the relationship between $n$ (on the x-axis) and profits (on the y-axis). Discuss the results.
+```{r}
+
+top_percent = seq(from = 0, to = 1, by = 0.01)
+
+profit_df = predict_profit_top_n(top_percent,
+                                 validation_df$exp_profit,
+                                 validation_df$target,
+                                 validation_df$spend,
+                                 2/3,
+                                 margin,
+                                 cost)
+ggplot(profit_df,aes(x=top_percent,y=profit))+
+  geom_line()
+
+```
+
+**The targeting profits increases as targeting percent increases from 1%, and reaches its peak when targeting percent is between 32%, then gradually declines. **
+
+(2) What is the targeting profit if none of the customers are targeted? What is the targeting profit under a blanket targeting strategy, when all customers are targeted?
+
+   **When the targeting percent equals to 0, the profit is expected to be $2,438,579 per one million customers. When all customers are targeted, the profit is expected to be $2,405,697 per one million customers.**
+
+(3) What is the optimal, profit-maximizing targeting percentage, $n^*$, and what is the corresponding targeting profit?
+
+   **The optimal targeting percentage is 32%, the corresponding targeting profit is $2,772,247. **
+
+(4) In light of your results, was the assumption that targeting profits in the absence of targeting are zero a good assumption?
+
+   **No, because under the assumption that targeting profits in the absence of targeting are zero, we will recommend to target 61.7% of all customers, resulting in over-targeting because some of the customers will still purchase even we don't target them. If we take that into consideration, the optimal targeting rate is just 32%.**
+
+(5) By how much can profits be increased when targeting the top $n^*$ percent of customers relative to the baseline profit if none of the customers are targeted? Express the difference in dollars and as a percentage of the baseline profit without targeting.
+
+   **$333,668 more profits can be earned when targeting the top 32% of customers compared to targeting none of the customers. That represents a 13.68% increase in profits from the baseline profit without targeting.**
