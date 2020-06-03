@@ -11,8 +11,8 @@ graphics: yes
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, comment = NA, message = FALSE, eval = FALSE,
-                      fig.width = 8, fig.height = 5.5, out.width = "75%", fig.align = "right")
+knitr::opts_chunk$set(echo = TRUE, comment = NA, message = TRUE, eval = TRUE,
+                      fig.width = 8, fig.height = 5.5, out.width = "75%", fig.align = "center")
 ```
 
 \setlength{\parskip}{6pt}
@@ -46,7 +46,7 @@ Summarize some key aspects of the data. In particular:
 
 ```{r}
 load("Targeting-Data.Rdata")
-
+library(tidyr)
 prop.table(table(crm_df$target))
 ```
 
@@ -86,7 +86,7 @@ First, set a seed for the random number generator and add a new column to `crm_d
 ```{r}
 set.seed(5807)
 
-library(tidyr)
+
 
 crm_df = crm_df %>%
    mutate(validation_sample = rbinom(n(), size = 1, prob = 0.5))
